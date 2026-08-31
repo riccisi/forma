@@ -20,6 +20,14 @@ public interface Attribute<P extends Property, T> {
     AttributeName<T> name();
 
     /**
+     * Returns the witness used to recognize the required property capability
+     * when binding from generic {@link Data}.
+     *
+     * @return required property capability
+     */
+    PropertyCapability<P> capability();
+
+    /**
      * Binds a represented property having the required capability.
      *
      * @param property represented property to interpret
