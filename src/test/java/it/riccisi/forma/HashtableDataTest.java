@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.stream.StreamSupport;
 import org.cactoos.text.TextOf;
 import org.junit.jupiter.api.Test;
@@ -11,7 +12,7 @@ import org.junit.jupiter.api.Test;
 final class HashtableDataTest {
 
     @Test
-    void resolvesValuesThroughOpaquePropertyReferences() throws Exception {
+    void resolvesValuesThroughGenericIteration() throws Exception {
         final PropertyReference name = new NamedReference("name");
         final PropertyReference age = new PositionalReference(1);
         final Data data = new HashtableData(
@@ -21,8 +22,8 @@ final class HashtableDataTest {
             )
         );
 
-        assertEquals("Alice", data.property(name).value().asText().asString());
-        assertEquals(42, data.property(age).value().asNumber().intValue());
+        assertEquals("Alice", propertyAt(data, name).value().asText().asString());
+        assertEquals(42, propertyAt(data, age).value().asNumber().intValue());
     }
 
     @Test
@@ -36,8 +37,18 @@ final class HashtableDataTest {
 
         assertEquals(
             "alice@example.com",
-            data.property(mapping.property(email)).value().asText().asString()
+            propertyAt(data, mapping.property(email)).value().asText().asString()
         );
+    }
+
+    @Test
+    void propertiesCarryTheirRepresentationCoordinates() {
+        final PropertyReference status = new NamedReference("status");
+        final Data data = new HashtableData(
+            Map.of(status, new TextValue(new TextOf("ACTIVE")))
+        );
+
+        assertEquals(status, data.iterator().next().reference());
     }
 
     @Test
@@ -51,25 +62,32 @@ final class HashtableDataTest {
             )
         );
 
-        assertEquals("ACTIVE", data.property(status).value().asText().asString());
+        assertEquals("ACTIVE", propertyAt(data, status).value().asText().asString());
         assertEquals(
             "Imported externally",
-            data.property(description).value().asText().asString()
+            propertyAt(data, description).value().asText().asString()
         );
-        assertEquals(
-            2L,
-            StreamSupport.stream(data.spliterator(), false).count()
-        );
+        assertEquals(2L, StreamSupport.stream(data.spliterator(), false).count());
     }
 
     @Test
-    void failsWhenTheRepresentationDoesNotContainTheReference() {
+    void genericLookupFailsWhenReferenceIsAbsent() {
         final Data data = new HashtableData(Map.of());
 
         assertThrows(
-            IllegalArgumentException.class,
-            () -> data.property(new NamedReference("missing"))
+            NoSuchElementException.class,
+            () -> propertyAt(data, new NamedReference("missing"))
         );
+    }
+
+    private static Property propertyAt(
+        final Data data,
+        final PropertyReference reference
+    ) {
+        return StreamSupport.stream(data.spliterator(), false)
+            .filter(property -> property.reference().equals(reference))
+            .findFirst()
+            .orElseThrow();
     }
 
     private record SemanticName() implements AttributeName<String> {
