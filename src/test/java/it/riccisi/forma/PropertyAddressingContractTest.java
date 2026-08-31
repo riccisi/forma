@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.StreamSupport;
 import org.cactoos.Text;
 import org.cactoos.text.TextOf;
 import org.junit.jupiter.api.Test;
@@ -27,7 +26,7 @@ final class PropertyAddressingContractTest {
             new ExplicitMapping(Map.of(email, field))
         );
 
-        assertEquals("alice@example.com", model.value(email));
+        assertEquals("alice@example.com", new AttributeOf<>(email, model).value());
     }
 
     @Test
@@ -44,7 +43,7 @@ final class PropertyAddressingContractTest {
             new ExplicitMapping(Map.of(email, position))
         );
 
-        assertEquals("alice@example.com", model.value(email));
+        assertEquals("alice@example.com", new AttributeOf<>(email, model).value());
     }
 
     @Test
@@ -61,7 +60,7 @@ final class PropertyAddressingContractTest {
             new ExplicitMapping(Map.of(email, path))
         );
 
-        assertEquals("alice@example.com", model.value(email));
+        assertEquals("alice@example.com", new AttributeOf<>(email, model).value());
     }
 
     @Test
@@ -88,18 +87,8 @@ final class PropertyAddressingContractTest {
 
         assertSame(data, firstModel.data());
         assertSame(data, secondModel.data());
-        assertEquals("first@example.com", firstModel.value(email));
-        assertEquals("second@example.com", secondModel.value(email));
-    }
-
-    private static Property propertyAt(
-        final Data data,
-        final PropertyReference reference
-    ) {
-        return StreamSupport.stream(data.spliterator(), false)
-            .filter(property -> property.reference().equals(reference))
-            .findFirst()
-            .orElseThrow();
+        assertEquals("first@example.com", new AttributeOf<>(email, firstModel).value());
+        assertEquals("second@example.com", new AttributeOf<>(email, secondModel).value());
     }
 
     private record SemanticName() implements AttributeName<String> {
@@ -173,13 +162,9 @@ final class PropertyAddressingContractTest {
         @Override
         public Model bind(final Data data, final PropertyMapping mapping) {
             final ModelAttribute<?> bound = this.attribute.bind(
-                propertyAt(data, mapping.property(this.attribute.name()))
+                new PropertyAt(mapping.property(this.attribute.name()), data)
             );
-            return new BoundModel(
-                this,
-                data,
-                Map.of(bound.name(), bound.value())
-            );
+            return new BoundModel(this, data, List.of(bound));
         }
 
         @Override
@@ -197,13 +182,12 @@ final class PropertyAddressingContractTest {
     private record BoundModel(
         Metadata metadata,
         Data data,
-        Map<AttributeName<?>, Object> values
+        List<ModelAttribute<?>> attributes
     ) implements Model {
 
         @Override
-        @SuppressWarnings("unchecked")
-        public <T> T value(final AttributeName<T> name) {
-            return (T) this.values.get(name);
+        public Iterator<ModelAttribute<?>> iterator() {
+            return this.attributes.iterator();
         }
     }
 }
