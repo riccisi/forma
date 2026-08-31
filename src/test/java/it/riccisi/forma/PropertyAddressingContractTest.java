@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.cactoos.Text;
+import org.cactoos.text.TextOf;
 import org.junit.jupiter.api.Test;
 
 final class PropertyAddressingContractTest {
@@ -17,7 +18,7 @@ final class PropertyAddressingContractTest {
         final PropertyReference field = new NamedReference("e_mail_address");
         final Metadata metadata = new SingleAttributeMetadata(new StringAttribute(email));
         final Data data = new ReferencedData(
-            Map.of(field, new TextProperty("alice@example.com"))
+            Map.of(field, new TextProperty(field, "alice@example.com"))
         );
 
         final Model model = metadata.bind(
@@ -25,7 +26,7 @@ final class PropertyAddressingContractTest {
             new ExplicitMapping(Map.of(email, field))
         );
 
-        assertEquals("alice@example.com", model.value(email));
+        assertEquals("alice@example.com", new AttributeOf<>(email, model).value());
     }
 
     @Test
@@ -34,7 +35,7 @@ final class PropertyAddressingContractTest {
         final PropertyReference position = new PositionalReference(7);
         final Metadata metadata = new SingleAttributeMetadata(new StringAttribute(email));
         final Data data = new ReferencedData(
-            Map.of(position, new TextProperty("alice@example.com"))
+            Map.of(position, new TextProperty(position, "alice@example.com"))
         );
 
         final Model model = metadata.bind(
@@ -42,7 +43,7 @@ final class PropertyAddressingContractTest {
             new ExplicitMapping(Map.of(email, position))
         );
 
-        assertEquals("alice@example.com", model.value(email));
+        assertEquals("alice@example.com", new AttributeOf<>(email, model).value());
     }
 
     @Test
@@ -51,7 +52,7 @@ final class PropertyAddressingContractTest {
         final PropertyReference path = new PathReference(List.of("contact", "email"));
         final Metadata metadata = new SingleAttributeMetadata(new StringAttribute(email));
         final Data data = new ReferencedData(
-            Map.of(path, new TextProperty("alice@example.com"))
+            Map.of(path, new TextProperty(path, "alice@example.com"))
         );
 
         final Model model = metadata.bind(
@@ -59,7 +60,7 @@ final class PropertyAddressingContractTest {
             new ExplicitMapping(Map.of(email, path))
         );
 
-        assertEquals("alice@example.com", model.value(email));
+        assertEquals("alice@example.com", new AttributeOf<>(email, model).value());
     }
 
     @Test
@@ -70,8 +71,8 @@ final class PropertyAddressingContractTest {
         final Metadata metadata = new SingleAttributeMetadata(new StringAttribute(email));
         final Data data = new ReferencedData(
             Map.of(
-                first, new TextProperty("first@example.com"),
-                second, new TextProperty("second@example.com")
+                first, new TextProperty(first, "first@example.com"),
+                second, new TextProperty(second, "second@example.com")
             )
         );
 
@@ -86,8 +87,8 @@ final class PropertyAddressingContractTest {
 
         assertSame(data, firstModel.data());
         assertSame(data, secondModel.data());
-        assertEquals("first@example.com", firstModel.value(email));
-        assertEquals("second@example.com", secondModel.value(email));
+        assertEquals("first@example.com", new AttributeOf<>(email, firstModel).value());
+        assertEquals("second@example.com", new AttributeOf<>(email, secondModel).value());
     }
 
     private record SemanticName() implements AttributeName<String> {
@@ -102,11 +103,14 @@ final class PropertyAddressingContractTest {
     private record PathReference(List<String> segments) implements PropertyReference {
     }
 
-    private record TextProperty(String text) implements Property {
+    private record TextProperty(
+        PropertyReference reference,
+        String text
+    ) implements Property {
 
         @Override
         public PropertyValue value() {
-            return new TextValue(this.text);
+            return new TextValue(new TextOf(this.text));
         }
     }
 
@@ -138,11 +142,6 @@ final class PropertyAddressingContractTest {
     ) implements Data {
 
         @Override
-        public Property property(final PropertyReference reference) {
-            return this.properties.get(reference);
-        }
-
-        @Override
         public Iterator<Property> iterator() {
             return this.properties.values().iterator();
         }
@@ -163,13 +162,9 @@ final class PropertyAddressingContractTest {
         @Override
         public Model bind(final Data data, final PropertyMapping mapping) {
             final ModelAttribute<?> bound = this.attribute.bind(
-                data.property(mapping.property(this.attribute.name()))
+                new PropertyAt(mapping.property(this.attribute.name()), data)
             );
-            return new BoundModel(
-                this,
-                data,
-                Map.of(bound.name(), bound.value())
-            );
+            return new BoundModel(this, data, List.of(bound));
         }
 
         @Override
@@ -187,13 +182,12 @@ final class PropertyAddressingContractTest {
     private record BoundModel(
         Metadata metadata,
         Data data,
-        Map<AttributeName<?>, Object> values
+        List<ModelAttribute<?>> attributes
     ) implements Model {
 
         @Override
-        @SuppressWarnings("unchecked")
-        public <T> T value(final AttributeName<T> name) {
-            return (T) this.values.get(name);
+        public Iterator<ModelAttribute<?>> iterator() {
+            return this.attributes.iterator();
         }
     }
 }
