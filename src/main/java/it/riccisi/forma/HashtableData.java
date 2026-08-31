@@ -10,7 +10,8 @@ import java.util.Map;
  *
  * <p>This class is intentionally small. It is a proving ground for Forma's core
  * object boundaries rather than a technology adapter. Coordinates remain opaque
- * {@link PropertyReference}s and values remain {@link PropertyValue}s.
+ * {@link PropertyReference}s and each iterated {@link Property} carries its own
+ * coordinate and value.
  */
 public final class HashtableData implements Data {
 
@@ -28,20 +29,9 @@ public final class HashtableData implements Data {
         values.forEach(
             (reference, value) -> this.properties.put(
                 reference,
-                new ValueProperty(value)
+                new ValueProperty(reference, value)
             )
         );
-    }
-
-    @Override
-    public Property property(final PropertyReference reference) {
-        final Property property = this.properties.get(reference);
-        if (property == null) {
-            throw new IllegalArgumentException(
-                "No property exists at the supplied reference"
-            );
-        }
-        return property;
     }
 
     @Override
