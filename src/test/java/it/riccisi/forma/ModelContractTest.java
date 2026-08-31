@@ -100,8 +100,18 @@ final class ModelContractTest {
         }
     }
 
-    private record EmailAttribute(AttributeName<Email> name)
-        extends TextAttribute<Email> {
+    private static final class EmailAttribute extends TextAttribute<Email> {
+
+        private final AttributeName<Email> name;
+
+        private EmailAttribute(final AttributeName<Email> name) {
+            this.name = name;
+        }
+
+        @Override
+        public AttributeName<Email> name() {
+            return this.name;
+        }
 
         @Override
         public ModelAttribute<Email> text(final Text value) {
