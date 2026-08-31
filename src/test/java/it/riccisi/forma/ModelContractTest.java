@@ -13,9 +13,28 @@ import org.junit.jupiter.api.Test;
 final class ModelContractTest {
 
     @Test
-    void sameSemanticAttributeReadsHeterogeneousRepresentations() {
+    void dataOwnsSemanticToRepresentationMapping() {
         final AttributeName<Email> name = new EmailName();
-        final Attribute<TextProperty, Email> email = new EmailAttribute(name);
+        final PropertyName field = new NamedProperty("e_mail");
+        final Data data = new MappedData(
+            Map.of(field, new JsonStringProperty("alice@example.com")),
+            new ExplicitMapping(Map.of(name, field))
+        );
+        final Metadata metadata = new SingleAttributeMetadata(
+            new EmailAttribute(name)
+        );
+
+        final Model model = metadata.bind(data);
+
+        assertSame(metadata, model.metadata());
+        assertSame(data, model.data());
+        assertEquals("alice@example.com", model.value(name).toString());
+    }
+
+    @Test
+    void textualAttributeIsIndependentFromConcreteRepresentation() {
+        final AttributeName<Email> name = new EmailName();
+        final Attribute<Email> email = new EmailAttribute(name);
 
         assertEquals(
             "alice@example.com",
@@ -31,23 +50,10 @@ final class ModelContractTest {
         );
     }
 
-    @Test
-    void metadataCapturesTypedCapabilityWithoutCasting() {
-        final AttributeName<Email> name = new EmailName();
-        final Attribute<TextProperty, Email> email = new EmailAttribute(name);
-        final Metadata metadata = new SingleAttributeMetadata(email);
-        final Data data = new SinglePropertyData(
-            new JsonStringProperty("alice@example.com")
-        );
-
-        final Model model = metadata.bind(data);
-
-        assertSame(metadata, model.metadata());
-        assertSame(data, model.data());
-        assertEquals("alice@example.com", model.value(name).toString());
+    private record EmailName() implements AttributeName<Email> {
     }
 
-    private record EmailName() implements AttributeName<Email> {
+    private record NamedProperty(String value) implements PropertyName {
     }
 
     private record Email(Text text) {
@@ -80,46 +86,65 @@ final class ModelContractTest {
         }
     }
 
-    private record TextCapability() implements PropertyCapability<TextProperty> {
+    private static final class EmailAttribute extends TextAttribute<Email> {
 
-        @Override
-        public TextProperty require(final Property property) {
-            if (!(property instanceof TextProperty text)) {
-                throw new IllegalArgumentException("A textual property is required");
-            }
-            return text;
-        }
-    }
+        private final AttributeName<Email> name;
 
-    private record EmailAttribute(AttributeName<Email> name)
-        implements Attribute<TextProperty, Email> {
-
-        @Override
-        public PropertyCapability<TextProperty> capability() {
-            return new TextCapability();
+        private EmailAttribute(final AttributeName<Email> name) {
+            this.name = name;
         }
 
         @Override
-        public ModelAttribute<Email> bind(final TextProperty property) {
+        public AttributeName<Email> name() {
+            return this.name;
+        }
+
+        @Override
+        protected ModelAttribute<Email> bind(final TextProperty property) {
             return new BoundModelAttribute<>(this.name, new Email(property.text()));
         }
     }
 
-    private record SinglePropertyData(Property property) implements Data {
+    private record ExplicitMapping(
+        Map<AttributeName<?>, PropertyName> properties
+    ) implements PropertyMapping {
 
         @Override
-        public Iterator<Property> iterator() {
-            return List.of(this.property).iterator();
+        public PropertyName property(final AttributeName<?> attribute) {
+            final PropertyName property = this.properties.get(attribute);
+            if (property == null) {
+                throw new IllegalArgumentException("No property mapping for attribute");
+            }
+            return property;
         }
     }
 
-    private record SingleAttributeMetadata(Attribute<?, ?> attribute) implements Metadata {
+    private record MappedData(
+        Map<PropertyName, Property> properties,
+        PropertyMapping mapping
+    ) implements Data {
+
+        @Override
+        public Property property(final AttributeName<?> name) {
+            final Property property = this.properties.get(this.mapping.property(name));
+            if (property == null) {
+                throw new IllegalArgumentException("Mapped property does not exist");
+            }
+            return property;
+        }
+
+        @Override
+        public Iterator<Property> iterator() {
+            return this.properties.values().iterator();
+        }
+    }
+
+    private record SingleAttributeMetadata(Attribute<?> attribute) implements Metadata {
 
         @Override
         public Model bind(final Data data) {
-            final ModelAttribute<?> bound = SingleAttributeMetadata.bound(
-                this.attribute,
-                data.iterator().next()
+            final ModelAttribute<?> bound = this.attribute.bind(
+                data.property(this.attribute.name())
             );
             return new BoundModel(
                 this,
@@ -129,15 +154,8 @@ final class ModelContractTest {
         }
 
         @Override
-        public Iterator<Attribute<?, ?>> iterator() {
-            return List.<Attribute<?, ?>>of(this.attribute).iterator();
-        }
-
-        private static <P extends Property, T> ModelAttribute<T> bound(
-            final Attribute<P, T> attribute,
-            final Property property
-        ) {
-            return attribute.bind(attribute.capability().require(property));
+        public Iterator<Attribute<?>> iterator() {
+            return List.<Attribute<?>>of(this.attribute).iterator();
         }
     }
 
