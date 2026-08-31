@@ -13,26 +13,7 @@ import org.junit.jupiter.api.Test;
 final class ModelContractTest {
 
     @Test
-    void dataOwnsSemanticToRepresentationMapping() {
-        final AttributeName<Email> name = new EmailName();
-        final PropertyName field = new NamedProperty("e_mail");
-        final Data data = new MappedData(
-            Map.of(field, new JsonStringProperty("alice@example.com")),
-            new ExplicitMapping(Map.of(name, field))
-        );
-        final Metadata metadata = new SingleAttributeMetadata(
-            new EmailAttribute(name)
-        );
-
-        final Model model = metadata.bind(data);
-
-        assertSame(metadata, model.metadata());
-        assertSame(data, model.data());
-        assertEquals("alice@example.com", model.value(name).toString());
-    }
-
-    @Test
-    void textualAttributeIsIndependentFromConcreteRepresentation() {
+    void sameSemanticAttributeReadsHeterogeneousRepresentations() {
         final AttributeName<Email> name = new EmailName();
         final Attribute<Email> email = new EmailAttribute(name);
 
@@ -48,6 +29,24 @@ final class ModelContractTest {
             "carol@example.com",
             email.bind(new PojoStringProperty("carol@example.com")).value().toString()
         );
+    }
+
+    @Test
+    void mappingBelongsToBindingRelationship() {
+        final AttributeName<Email> name = new EmailName();
+        final PropertyName field = new NamedProperty("e_mail");
+        final Attribute<Email> email = new EmailAttribute(name);
+        final Metadata metadata = new SingleAttributeMetadata(email);
+        final Data data = new NamedData(
+            Map.of(field, new JsonStringProperty("alice@example.com"))
+        );
+        final PropertyMapping mapping = new ExplicitMapping(Map.of(name, field));
+
+        final Model model = metadata.bind(data, mapping);
+
+        assertSame(metadata, model.metadata());
+        assertSame(data, model.data());
+        assertEquals("alice@example.com", model.value(name).toString());
     }
 
     private record EmailName() implements AttributeName<Email> {
@@ -68,69 +67,53 @@ final class ModelContractTest {
         }
     }
 
-    private record JsonStringProperty(Text text) implements TextProperty {
+    private record JsonStringProperty(Text text) implements Property {
         private JsonStringProperty(final String text) {
             this(new TextOf(text));
         }
+
+        @Override
+        public <T> T describe(final PropertyValue<T> value) {
+            return value.text(this.text);
+        }
     }
 
-    private record MapStringProperty(Text text) implements TextProperty {
+    private record MapStringProperty(Text text) implements Property {
         private MapStringProperty(final String text) {
             this(new TextOf(text));
         }
+
+        @Override
+        public <T> T describe(final PropertyValue<T> value) {
+            return value.text(this.text);
+        }
     }
 
-    private record PojoStringProperty(Text text) implements TextProperty {
+    private record PojoStringProperty(Text text) implements Property {
         private PojoStringProperty(final String text) {
             this(new TextOf(text));
         }
-    }
-
-    private static final class EmailAttribute extends TextAttribute<Email> {
-
-        private final AttributeName<Email> name;
-
-        private EmailAttribute(final AttributeName<Email> name) {
-            this.name = name;
-        }
 
         @Override
-        public AttributeName<Email> name() {
-            return this.name;
-        }
-
-        @Override
-        protected ModelAttribute<Email> bind(final TextProperty property) {
-            return new BoundModelAttribute<>(this.name, new Email(property.text()));
+        public <T> T describe(final PropertyValue<T> value) {
+            return value.text(this.text);
         }
     }
 
-    private record ExplicitMapping(
-        Map<AttributeName<?>, PropertyName> properties
-    ) implements PropertyMapping {
+    private record EmailAttribute(AttributeName<Email> name)
+        extends TextAttribute<Email> {
 
         @Override
-        public PropertyName property(final AttributeName<?> attribute) {
-            final PropertyName property = this.properties.get(attribute);
-            if (property == null) {
-                throw new IllegalArgumentException("No property mapping for attribute");
-            }
-            return property;
+        public ModelAttribute<Email> text(final Text value) {
+            return new BoundModelAttribute<>(this.name, new Email(value));
         }
     }
 
-    private record MappedData(
-        Map<PropertyName, Property> properties,
-        PropertyMapping mapping
-    ) implements Data {
+    private record NamedData(Map<PropertyName, Property> properties) implements Data {
 
         @Override
-        public Property property(final AttributeName<?> name) {
-            final Property property = this.properties.get(this.mapping.property(name));
-            if (property == null) {
-                throw new IllegalArgumentException("Mapped property does not exist");
-            }
-            return property;
+        public Property property(final PropertyReference reference) {
+            return this.properties.get(reference);
         }
 
         @Override
@@ -139,12 +122,22 @@ final class ModelContractTest {
         }
     }
 
+    private record ExplicitMapping(
+        Map<AttributeName<?>, PropertyReference> references
+    ) implements PropertyMapping {
+
+        @Override
+        public PropertyReference property(final AttributeName<?> attribute) {
+            return this.references.get(attribute);
+        }
+    }
+
     private record SingleAttributeMetadata(Attribute<?> attribute) implements Metadata {
 
         @Override
-        public Model bind(final Data data) {
+        public Model bind(final Data data, final PropertyMapping mapping) {
             final ModelAttribute<?> bound = this.attribute.bind(
-                data.property(this.attribute.name())
+                data.property(mapping.property(this.attribute.name()))
             );
             return new BoundModel(
                 this,
