@@ -8,17 +8,16 @@ package it.riccisi.forma;
  * be complete, partial, projected, filtered, merged, or backed dynamically by a
  * source whose contents can change independently from this object's identity.
  *
- * <p>Property resolution belongs to the data representation. Concrete data
- * objects may use a {@link PropertyMapping} supplied at construction time to
- * translate semantic attribute identities into representation coordinates.
+ * <p>Data speaks only in representation coordinates. Association with semantic
+ * attributes is established externally when metadata is bound to this data.
  */
 public interface Data extends Iterable<Property> {
 
     /**
-     * Resolves the represented property associated with a semantic attribute.
+     * Resolves a property by a coordinate understood by this representation.
      *
-     * @param name semantic attribute identity
+     * @param reference representation property reference
      * @return represented property
      */
-    Property property(AttributeName<?> name);
+    Property property(PropertyReference reference);
 }
