@@ -3,21 +3,25 @@ package it.riccisi.forma;
 import org.cactoos.Text;
 
 /**
- * A representation-level interpretation requested from a property.
+ * Representation-neutral value exposed by a {@link Property}.
  *
- * <p>The spike deliberately starts with the smallest useful vocabulary. Further
- * represented value forms should be added only when concrete heterogeneous data
- * representations require them.
- *
- * @param <T> interpreted result type
+ * <p>The contract intentionally contains only a small set of fundamental value
+ * interpretations. Concrete value objects may support conversions between those
+ * forms when the represented information permits it.
  */
-public interface PropertyValue<T> {
+public interface PropertyValue {
 
     /**
-     * Interprets represented textual information.
+     * Interprets this represented value as text.
      *
-     * @param value textual representation
-     * @return interpreted result
+     * @return textual interpretation
      */
-    T text(Text value);
+    Text asText();
+
+    /**
+     * Interprets this represented value as a number.
+     *
+     * @return numeric interpretation
+     */
+    Number asNumber();
 }
