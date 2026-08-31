@@ -1,5 +1,6 @@
 package it.riccisi.forma;
 
+
 /**
  * A representation-level interpretation requested from a property.
  *
