@@ -7,8 +7,11 @@ package it.riccisi.forma;
  * the represented shape as Java state. It establishes that selected information
  * from the source data satisfies the semantic structure defined by metadata,
  * while other represented information may remain preserved as data.
+ *
+ * <p>A model exposes the semantic attributes established by binding. Lookup by
+ * attribute identity is a derived operation over this iterable observation.
  */
-public interface Model {
+public interface Model extends Iterable<ModelAttribute<?>> {
 
     /**
      * Returns the metadata that established this model's semantic validity.
@@ -28,17 +31,4 @@ public interface Model {
      * @return represented source data
      */
     Data data();
-
-    /**
-     * Returns the semantic value bound to the given attribute name.
-     *
-     * <p>The generic type expresses the value expected by callers. Implementations
-     * must preserve the invariant established during metadata binding: a name is
-     * associated only with a compatible bound value.
-     *
-     * @param name attribute identity
-     * @param <T> semantic value type
-     * @return semantic value bound to the name
-     */
-    <T> T value(AttributeName<T> name);
 }
