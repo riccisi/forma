@@ -1,15 +1,23 @@
 package it.riccisi.forma;
 
+import org.cactoos.Text;
 
 /**
  * A representation-level interpretation requested from a property.
  *
- * <p>A property value object defines part of the small algebra used to describe
- * represented values, such as text, numbers, booleans, arrays, or nested data.
- * It must not encode business concepts such as email addresses, money, or
- * student identifiers; those concepts belong to {@link Attribute attributes}.
+ * <p>The spike deliberately starts with the smallest useful vocabulary. Further
+ * represented value forms should be added only when concrete heterogeneous data
+ * representations require them.
  *
  * @param <T> interpreted result type
  */
 public interface PropertyValue<T> {
+
+    /**
+     * Interprets represented textual information.
+     *
+     * @param value textual representation
+     * @return interpreted result
+     */
+    T text(Text value);
 }
