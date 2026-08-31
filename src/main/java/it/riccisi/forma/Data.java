@@ -8,9 +8,17 @@ package it.riccisi.forma;
  * be complete, partial, projected, filtered, merged, or backed dynamically by a
  * source whose contents can change independently from this object's identity.
  *
- * <p>Iteration exposes the properties that the implementation chooses to make
- * discoverable. The contract does not require eager extraction of every possible
- * property from the underlying representation.
+ * <p>Property resolution belongs to the data representation. Concrete data
+ * objects may use a {@link PropertyMapping} supplied at construction time to
+ * translate semantic attribute identities into representation coordinates.
  */
 public interface Data extends Iterable<Property> {
+
+    /**
+     * Resolves the represented property associated with a semantic attribute.
+     *
+     * @param name semantic attribute identity
+     * @return represented property
+     */
+    Property property(AttributeName<?> name);
 }
