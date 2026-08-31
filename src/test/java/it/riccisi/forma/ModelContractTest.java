@@ -9,9 +9,9 @@ import org.junit.jupiter.api.Test;
 final class ModelContractTest {
 
     @Test
-    void sameSemanticAttributeReadsHeterogeneousRepresentations() throws Exception {
+    void sameSemanticAttributeReadsHeterogeneousRepresentations() {
         final AttributeName<Email> name = new EmailName();
-        final Attribute<Email> email = new EmailAttribute(name);
+        final Attribute<TextProperty, Email> email = new EmailAttribute(name);
 
         assertEquals(
             "alice@example.com",
@@ -60,14 +60,12 @@ final class ModelContractTest {
         }
     }
 
-    private record EmailAttribute(AttributeName<Email> name) implements Attribute<Email> {
+    private record EmailAttribute(AttributeName<Email> name)
+        implements Attribute<TextProperty, Email> {
 
         @Override
-        public ModelAttribute<Email> bind(final Property property) {
-            if (!(property instanceof TextProperty text)) {
-                throw new IllegalArgumentException("Email requires a textual property");
-            }
-            return new BoundModelAttribute<>(this.name, new Email(text.text()));
+        public ModelAttribute<Email> bind(final TextProperty property) {
+            return new BoundModelAttribute<>(this.name, new Email(property.text()));
         }
     }
 
