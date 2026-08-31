@@ -6,7 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.StreamSupport;
 import org.cactoos.Text;
+import org.cactoos.text.TextOf;
 import org.junit.jupiter.api.Test;
 
 final class PropertyAddressingContractTest {
@@ -17,7 +19,7 @@ final class PropertyAddressingContractTest {
         final PropertyReference field = new NamedReference("e_mail_address");
         final Metadata metadata = new SingleAttributeMetadata(new StringAttribute(email));
         final Data data = new ReferencedData(
-            Map.of(field, new TextProperty("alice@example.com"))
+            Map.of(field, new TextProperty(field, "alice@example.com"))
         );
 
         final Model model = metadata.bind(
@@ -34,7 +36,7 @@ final class PropertyAddressingContractTest {
         final PropertyReference position = new PositionalReference(7);
         final Metadata metadata = new SingleAttributeMetadata(new StringAttribute(email));
         final Data data = new ReferencedData(
-            Map.of(position, new TextProperty("alice@example.com"))
+            Map.of(position, new TextProperty(position, "alice@example.com"))
         );
 
         final Model model = metadata.bind(
@@ -51,7 +53,7 @@ final class PropertyAddressingContractTest {
         final PropertyReference path = new PathReference(List.of("contact", "email"));
         final Metadata metadata = new SingleAttributeMetadata(new StringAttribute(email));
         final Data data = new ReferencedData(
-            Map.of(path, new TextProperty("alice@example.com"))
+            Map.of(path, new TextProperty(path, "alice@example.com"))
         );
 
         final Model model = metadata.bind(
@@ -70,8 +72,8 @@ final class PropertyAddressingContractTest {
         final Metadata metadata = new SingleAttributeMetadata(new StringAttribute(email));
         final Data data = new ReferencedData(
             Map.of(
-                first, new TextProperty("first@example.com"),
-                second, new TextProperty("second@example.com")
+                first, new TextProperty(first, "first@example.com"),
+                second, new TextProperty(second, "second@example.com")
             )
         );
 
@@ -90,6 +92,16 @@ final class PropertyAddressingContractTest {
         assertEquals("second@example.com", secondModel.value(email));
     }
 
+    private static Property propertyAt(
+        final Data data,
+        final PropertyReference reference
+    ) {
+        return StreamSupport.stream(data.spliterator(), false)
+            .filter(property -> property.reference().equals(reference))
+            .findFirst()
+            .orElseThrow();
+    }
+
     private record SemanticName() implements AttributeName<String> {
     }
 
@@ -102,11 +114,14 @@ final class PropertyAddressingContractTest {
     private record PathReference(List<String> segments) implements PropertyReference {
     }
 
-    private record TextProperty(String text) implements Property {
+    private record TextProperty(
+        PropertyReference reference,
+        String text
+    ) implements Property {
 
         @Override
         public PropertyValue value() {
-            return new TextValue(this.text);
+            return new TextValue(new TextOf(this.text));
         }
     }
 
@@ -138,11 +153,6 @@ final class PropertyAddressingContractTest {
     ) implements Data {
 
         @Override
-        public Property property(final PropertyReference reference) {
-            return this.properties.get(reference);
-        }
-
-        @Override
         public Iterator<Property> iterator() {
             return this.properties.values().iterator();
         }
@@ -163,7 +173,7 @@ final class PropertyAddressingContractTest {
         @Override
         public Model bind(final Data data, final PropertyMapping mapping) {
             final ModelAttribute<?> bound = this.attribute.bind(
-                data.property(mapping.property(this.attribute.name()))
+                propertyAt(data, mapping.property(this.attribute.name()))
             );
             return new BoundModel(
                 this,
