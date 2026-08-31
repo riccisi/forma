@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 final class HashtableDataTest {
 
     @Test
-    void resolvesValuesThroughGenericIteration() throws Exception {
+    void resolvesValuesThroughPropertyAt() throws Exception {
         final PropertyReference name = new NamedReference("name");
         final PropertyReference age = new PositionalReference(1);
         final Data data = new HashtableData(
@@ -22,8 +22,14 @@ final class HashtableDataTest {
             )
         );
 
-        assertEquals("Alice", propertyAt(data, name).value().asText().asString());
-        assertEquals(42, propertyAt(data, age).value().asNumber().intValue());
+        assertEquals(
+            "Alice",
+            new PropertyAt(name, data).value().asText().asString()
+        );
+        assertEquals(
+            42,
+            new PropertyAt(age, data).value().asNumber().intValue()
+        );
     }
 
     @Test
@@ -37,7 +43,8 @@ final class HashtableDataTest {
 
         assertEquals(
             "alice@example.com",
-            propertyAt(data, mapping.property(email)).value().asText().asString()
+            new PropertyAt(mapping.property(email), data)
+                .value().asText().asString()
         );
     }
 
@@ -62,32 +69,25 @@ final class HashtableDataTest {
             )
         );
 
-        assertEquals("ACTIVE", propertyAt(data, status).value().asText().asString());
+        assertEquals(
+            "ACTIVE",
+            new PropertyAt(status, data).value().asText().asString()
+        );
         assertEquals(
             "Imported externally",
-            propertyAt(data, description).value().asText().asString()
+            new PropertyAt(description, data).value().asText().asString()
         );
         assertEquals(2L, StreamSupport.stream(data.spliterator(), false).count());
     }
 
     @Test
-    void genericLookupFailsWhenReferenceIsAbsent() {
+    void propertyAtFailsWhenReferenceIsAbsent() {
         final Data data = new HashtableData(Map.of());
 
         assertThrows(
             NoSuchElementException.class,
-            () -> propertyAt(data, new NamedReference("missing"))
+            () -> new PropertyAt(new NamedReference("missing"), data).value()
         );
-    }
-
-    private static Property propertyAt(
-        final Data data,
-        final PropertyReference reference
-    ) {
-        return StreamSupport.stream(data.spliterator(), false)
-            .filter(property -> property.reference().equals(reference))
-            .findFirst()
-            .orElseThrow();
     }
 
     private record SemanticName() implements AttributeName<String> {
