@@ -32,6 +32,15 @@ final class ModelContractTest {
     }
 
     @Test
+    void propertyValuesOwnPrimitiveConversions() throws Exception {
+        final PropertyValue textual = new TextValue(new TextOf("42"));
+        final PropertyValue numeric = new NumberValue(42);
+
+        assertEquals("42", textual.asNumber().toString());
+        assertEquals("42", numeric.asText().asString());
+    }
+
+    @Test
     void mappingBelongsToBindingRelationship() {
         final AttributeName<Email> name = new EmailName();
         final PropertyName field = new NamedProperty("e_mail");
@@ -73,8 +82,8 @@ final class ModelContractTest {
         }
 
         @Override
-        public <T> T describe(final PropertyValue<T> value) {
-            return value.text(this.text);
+        public PropertyValue value() {
+            return new TextValue(this.text);
         }
     }
 
@@ -84,8 +93,8 @@ final class ModelContractTest {
         }
 
         @Override
-        public <T> T describe(final PropertyValue<T> value) {
-            return value.text(this.text);
+        public PropertyValue value() {
+            return new TextValue(this.text);
         }
     }
 
@@ -95,8 +104,8 @@ final class ModelContractTest {
         }
 
         @Override
-        public <T> T describe(final PropertyValue<T> value) {
-            return value.text(this.text);
+        public PropertyValue value() {
+            return new TextValue(this.text);
         }
     }
 
@@ -114,7 +123,7 @@ final class ModelContractTest {
         }
 
         @Override
-        public ModelAttribute<Email> text(final Text value) {
+        protected ModelAttribute<Email> bind(final Text value) {
             return new BoundModelAttribute<>(this.name, new Email(value));
         }
     }
