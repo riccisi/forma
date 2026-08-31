@@ -1,29 +1,24 @@
 package it.riccisi.forma;
 
+import org.cactoos.Text;
+
 /**
  * Base attribute for semantic values interpreted from textual properties.
  *
- * <p>The representation capability check is centralized in the textual semantic
- * family instead of being repeated by every concrete textual attribute or
- * represented by a separate witness object.
+ * <p>The attribute itself is the representation-level interpreter requested from
+ * a property. This keeps concrete property types out of semantic attributes and
+ * avoids runtime type inspection.
  *
  * @param <T> semantic value type
  */
-public abstract class TextAttribute<T> implements Attribute<T> {
+public abstract class TextAttribute<T>
+    implements Attribute<T>, PropertyValue<ModelAttribute<T>> {
 
     @Override
     public final ModelAttribute<T> bind(final Property property) {
-        if (!(property instanceof TextProperty text)) {
-            throw new IllegalArgumentException("A textual property is required");
-        }
-        return this.bind(text);
+        return property.describe(this);
     }
 
-    /**
-     * Interprets a textual represented property as a semantic value.
-     *
-     * @param property textual property
-     * @return successfully bound model attribute
-     */
-    protected abstract ModelAttribute<T> bind(TextProperty property);
+    @Override
+    public abstract ModelAttribute<T> text(Text value);
 }
