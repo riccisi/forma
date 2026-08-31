@@ -11,7 +11,7 @@ package it.riccisi.forma;
  * according to this metadata and must not require a separate validation step
  * before use.
  */
-public interface Metadata extends Iterable<Attribute<?, ?>> {
+public interface Metadata extends Iterable<Attribute<?>> {
 
     /**
      * Constructs a valid semantic model from represented data.
