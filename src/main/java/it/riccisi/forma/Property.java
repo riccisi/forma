@@ -3,25 +3,16 @@ package it.riccisi.forma;
 /**
  * An individually interpretable portion of represented data.
  *
- * <p>A property keeps representation knowledge behind an object boundary. It
- * does not expose a raw {@link Object}, string, byte array, or other universal
- * carrier because doing so would force clients to recover representation
- * semantics procedurally.
+ * <p>A property keeps representation knowledge behind an object boundary while
+ * exposing its represented value through a small, representation-neutral
+ * {@link PropertyValue} abstraction.
  */
 public interface Property {
 
     /**
-     * Describes this property using the requested representation-level
-     * interpretation.
+     * Returns the represented value of this property.
      *
-     * <p>The supplied {@link PropertyValue} belongs to the representation layer,
-     * not to the business-semantic layer. Implementations may use information
-     * already available in their source representation instead of serializing and
-     * parsing the property again.
-     *
-     * @param value requested representation-level interpretation
-     * @param <T> result type produced by the interpretation
-     * @return the interpreted value
+     * @return represented value
      */
-    <T> T describe(PropertyValue<T> value);
+    PropertyValue value();
 }

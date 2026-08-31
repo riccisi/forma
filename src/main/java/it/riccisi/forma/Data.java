@@ -8,9 +8,16 @@ package it.riccisi.forma;
  * be complete, partial, projected, filtered, merged, or backed dynamically by a
  * source whose contents can change independently from this object's identity.
  *
- * <p>Iteration exposes the properties that the implementation chooses to make
- * discoverable. The contract does not require eager extraction of every possible
- * property from the underlying representation.
+ * <p>Data speaks only in representation coordinates. Association with semantic
+ * attributes is established externally when metadata is bound to this data.
  */
 public interface Data extends Iterable<Property> {
+
+    /**
+     * Resolves a property by a coordinate understood by this representation.
+     *
+     * @param reference representation property reference
+     * @return represented property
+     */
+    Property property(PropertyReference reference);
 }
