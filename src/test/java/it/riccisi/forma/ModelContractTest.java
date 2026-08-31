@@ -1,90 +1,79 @@
 package it.riccisi.forma;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
 
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import org.cactoos.Text;
+import org.cactoos.text.TextOf;
 import org.junit.jupiter.api.Test;
 
 final class ModelContractTest {
 
     @Test
-    void bindsDataIntoTrustworthyModel() {
-        final AttributeName<String> name = new NamedAttributeName<>();
-        final Data data = new SinglePropertyData(new TextProperty("active"));
-        final Metadata metadata = new SingleAttributeMetadata(new TextAttribute(name));
+    void sameSemanticAttributeReadsHeterogeneousRepresentations() throws Exception {
+        final AttributeName<Email> name = new EmailName();
+        final Attribute<Email> email = new EmailAttribute(name);
 
-        final Model model = metadata.bind(data);
-
-        assertSame(metadata, model.metadata());
-        assertSame(data, model.data());
-        assertEquals("active", model.value(name));
+        assertEquals(
+            "alice@example.com",
+            email.bind(new JsonStringProperty("alice@example.com")).value().toString()
+        );
+        assertEquals(
+            "bob@example.com",
+            email.bind(new MapStringProperty("bob@example.com")).value().toString()
+        );
+        assertEquals(
+            "carol@example.com",
+            email.bind(new PojoStringProperty("carol@example.com")).value().toString()
+        );
     }
 
-    private record NamedAttributeName<T>() implements AttributeName<T> {
+    private record EmailName() implements AttributeName<Email> {
     }
 
-    private record SinglePropertyData(Property property) implements Data {
+    private record Email(Text text) {
 
         @Override
-        public Iterator<Property> iterator() {
-            return List.of(this.property).iterator();
+        public String toString() {
+            try {
+                return this.text.asString();
+            } catch (final Exception err) {
+                throw new IllegalStateException(err);
+            }
         }
     }
 
-    private record TextProperty(String text) implements Property {
-
-        @Override
-        @SuppressWarnings("unchecked")
-        public <T> T describe(PropertyValue<T> value) {
-            return (T) this.text;
+    private record JsonStringProperty(Text text) implements TextProperty {
+        private JsonStringProperty(final String text) {
+            this(new TextOf(text));
         }
     }
 
-    private record TextAttribute(AttributeName<String> name) implements Attribute<String> {
-
-        @Override
-        public ModelAttribute<String> bind(Property property) {
-            return new BoundModelAttribute<>(this.name, property.describe(new TextValue()));
+    private record MapStringProperty(Text text) implements TextProperty {
+        private MapStringProperty(final String text) {
+            this(new TextOf(text));
         }
     }
 
-    private record TextValue() implements PropertyValue<String> {
+    private record PojoStringProperty(Text text) implements TextProperty {
+        private PojoStringProperty(final String text) {
+            this(new TextOf(text));
+        }
+    }
+
+    private record EmailAttribute(AttributeName<Email> name) implements Attribute<Email> {
+
+        @Override
+        public ModelAttribute<Email> bind(final Property property) {
+            if (!(property instanceof TextProperty text)) {
+                throw new IllegalArgumentException("Email requires a textual property");
+            }
+            return new BoundModelAttribute<>(this.name, new Email(text.text()));
+        }
     }
 
     private record BoundModelAttribute<T>(
         AttributeName<T> name,
         T value
     ) implements ModelAttribute<T> {
-    }
-
-    private record SingleAttributeMetadata(Attribute<?> attribute) implements Metadata {
-
-        @Override
-        public Model bind(Data data) {
-            final Property property = data.iterator().next();
-            final ModelAttribute<?> modelAttribute = this.attribute.bind(property);
-            return new BoundModel(this, data, Map.of(modelAttribute.name(), modelAttribute.value()));
-        }
-
-        @Override
-        public Iterator<Attribute<?>> iterator() {
-            return List.<Attribute<?>>of(this.attribute).iterator();
-        }
-    }
-
-    private record BoundModel(
-        Metadata metadata,
-        Data data,
-        Map<AttributeName<?>, Object> values
-    ) implements Model {
-
-        @Override
-        @SuppressWarnings("unchecked")
-        public <T> T value(AttributeName<T> name) {
-            return (T) this.values.get(name);
-        }
     }
 }
