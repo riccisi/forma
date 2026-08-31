@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.StreamSupport;
 import org.cactoos.Text;
 import org.cactoos.text.TextOf;
 import org.junit.jupiter.api.Test;
@@ -16,18 +17,22 @@ final class ModelContractTest {
     void sameSemanticAttributeReadsHeterogeneousRepresentations() {
         final AttributeName<Email> name = new EmailName();
         final Attribute<Email> email = new EmailAttribute(name);
+        final PropertyReference reference = new NamedReference("email");
 
         assertEquals(
             "alice@example.com",
-            email.bind(new JsonStringProperty("alice@example.com")).value().toString()
+            email.bind(new JsonStringProperty(reference, "alice@example.com"))
+                .value().toString()
         );
         assertEquals(
             "bob@example.com",
-            email.bind(new MapStringProperty("bob@example.com")).value().toString()
+            email.bind(new MapStringProperty(reference, "bob@example.com"))
+                .value().toString()
         );
         assertEquals(
             "carol@example.com",
-            email.bind(new PojoStringProperty("carol@example.com")).value().toString()
+            email.bind(new PojoStringProperty(reference, "carol@example.com"))
+                .value().toString()
         );
     }
 
@@ -43,11 +48,11 @@ final class ModelContractTest {
     @Test
     void mappingBelongsToBindingRelationship() {
         final AttributeName<Email> name = new EmailName();
-        final PropertyName field = new NamedProperty("e_mail");
+        final PropertyReference field = new NamedReference("e_mail");
         final Attribute<Email> email = new EmailAttribute(name);
         final Metadata metadata = new SingleAttributeMetadata(email);
         final Data data = new NamedData(
-            Map.of(field, new JsonStringProperty("alice@example.com"))
+            Map.of(field, new JsonStringProperty(field, "alice@example.com"))
         );
         final PropertyMapping mapping = new ExplicitMapping(Map.of(name, field));
 
@@ -58,10 +63,20 @@ final class ModelContractTest {
         assertEquals("alice@example.com", model.value(name).toString());
     }
 
+    private static Property propertyAt(
+        final Data data,
+        final PropertyReference reference
+    ) {
+        return StreamSupport.stream(data.spliterator(), false)
+            .filter(property -> property.reference().equals(reference))
+            .findFirst()
+            .orElseThrow();
+    }
+
     private record EmailName() implements AttributeName<Email> {
     }
 
-    private record NamedProperty(String value) implements PropertyName {
+    private record NamedReference(String value) implements PropertyReference {
     }
 
     private record Email(Text text) {
@@ -76,9 +91,15 @@ final class ModelContractTest {
         }
     }
 
-    private record JsonStringProperty(Text text) implements Property {
-        private JsonStringProperty(final String text) {
-            this(new TextOf(text));
+    private record JsonStringProperty(
+        PropertyReference reference,
+        Text text
+    ) implements Property {
+        private JsonStringProperty(
+            final PropertyReference reference,
+            final String text
+        ) {
+            this(reference, new TextOf(text));
         }
 
         @Override
@@ -87,9 +108,15 @@ final class ModelContractTest {
         }
     }
 
-    private record MapStringProperty(Text text) implements Property {
-        private MapStringProperty(final String text) {
-            this(new TextOf(text));
+    private record MapStringProperty(
+        PropertyReference reference,
+        Text text
+    ) implements Property {
+        private MapStringProperty(
+            final PropertyReference reference,
+            final String text
+        ) {
+            this(reference, new TextOf(text));
         }
 
         @Override
@@ -98,9 +125,15 @@ final class ModelContractTest {
         }
     }
 
-    private record PojoStringProperty(Text text) implements Property {
-        private PojoStringProperty(final String text) {
-            this(new TextOf(text));
+    private record PojoStringProperty(
+        PropertyReference reference,
+        Text text
+    ) implements Property {
+        private PojoStringProperty(
+            final PropertyReference reference,
+            final String text
+        ) {
+            this(reference, new TextOf(text));
         }
 
         @Override
@@ -128,12 +161,9 @@ final class ModelContractTest {
         }
     }
 
-    private record NamedData(Map<PropertyName, Property> properties) implements Data {
-
-        @Override
-        public Property property(final PropertyReference reference) {
-            return this.properties.get(reference);
-        }
+    private record NamedData(
+        Map<PropertyReference, Property> properties
+    ) implements Data {
 
         @Override
         public Iterator<Property> iterator() {
@@ -156,7 +186,7 @@ final class ModelContractTest {
         @Override
         public Model bind(final Data data, final PropertyMapping mapping) {
             final ModelAttribute<?> bound = this.attribute.bind(
-                data.property(mapping.property(this.attribute.name()))
+                propertyAt(data, mapping.property(this.attribute.name()))
             );
             return new BoundModel(
                 this,
