@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Map;
+import java.util.stream.StreamSupport;
 import org.cactoos.text.TextOf;
 import org.junit.jupiter.api.Test;
 
@@ -25,6 +26,21 @@ final class HashtableDataTest {
     }
 
     @Test
+    void participatesInThePropertyMappingProtocol() throws Exception {
+        final AttributeName<String> email = new SemanticName();
+        final PropertyReference field = new NamedReference("e_mail_address");
+        final Data data = new HashtableData(
+            Map.of(field, new TextValue(new TextOf("alice@example.com")))
+        );
+        final PropertyMapping mapping = attribute -> field;
+
+        assertEquals(
+            "alice@example.com",
+            data.property(mapping.property(email)).value().asText().asString()
+        );
+    }
+
+    @Test
     void preservesInformationNotConsumedByASemanticBinding() throws Exception {
         final PropertyReference status = new NamedReference("status");
         final PropertyReference description = new NamedReference("description");
@@ -40,7 +56,10 @@ final class HashtableDataTest {
             "Imported externally",
             data.property(description).value().asText().asString()
         );
-        assertEquals(2L, data.spliterator().getExactSizeIfKnown());
+        assertEquals(
+            2L,
+            StreamSupport.stream(data.spliterator(), false).count()
+        );
     }
 
     @Test
@@ -51,6 +70,9 @@ final class HashtableDataTest {
             IllegalArgumentException.class,
             () -> data.property(new NamedReference("missing"))
         );
+    }
+
+    private record SemanticName() implements AttributeName<String> {
     }
 
     private record NamedReference(String value) implements PropertyReference {
