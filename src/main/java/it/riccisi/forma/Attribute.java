@@ -3,9 +3,9 @@ package it.riccisi.forma;
 /**
  * A semantic coordinate that can bind a represented property into a valid value.
  *
- * <p>An attribute defines the semantic meaning expected from a property. Property
- * location is owned by {@link Data}; attributes only interpret the represented
- * property selected for their {@link AttributeName}.
+ * <p>An attribute defines semantic meaning and interpretation only. It does not
+ * know how its semantic identity is mapped to the coordinate of a concrete data
+ * representation; that association is supplied at metadata binding time.
  *
  * @param <T> semantic value type
  */
