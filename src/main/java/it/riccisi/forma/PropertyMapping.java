@@ -1,20 +1,21 @@
 package it.riccisi.forma;
 
 /**
- * Strategy translating semantic attribute identities into property coordinates
- * understood by a concrete data representation.
- *
- * <p>The mapping is configuration of a {@link Data} representation. Attributes
- * remain unaware of physical names, columns, positions, members, or other source
+ * Strategy translating semantic attribute identities into representation
  * coordinates.
+ *
+ * <p>The mapping belongs to the binding relationship between {@link Metadata}
+ * and {@link Data}: metadata owns semantic names, data owns representation
+ * references, and the mapping relates the two without coupling either side to
+ * the other's coordinate system.
  */
 public interface PropertyMapping {
 
     /**
-     * Resolves the representation property name for a semantic attribute.
+     * Resolves the representation coordinate for a semantic attribute.
      *
      * @param attribute semantic attribute identity
-     * @return representation property name
+     * @return representation property reference
      */
-    PropertyName property(AttributeName<?> attribute);
+    PropertyReference property(AttributeName<?> attribute);
 }
