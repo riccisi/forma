@@ -6,29 +6,132 @@ Proposed
 
 ## Context
 
-Java applications commonly represent data by defining classes whose fields reproduce the structure of that data. This makes the Java class itself coincide with the notion of data and tends to turn objects into passive state containers manipulated by validators, mappers, serializers, converters, and similar external procedures.
+Java applications commonly represent data by defining classes whose fields reproduce the structure of that data.
 
-The same logical information is often duplicated across technical boundaries through request DTOs, domain DTOs, persistence entities, and message DTOs even when application behavior depends on only a small portion of that information.
+A typical application introduces POJOs, DTOs, records, persistence entities, request objects, response objects, or message payload classes such as:
 
-Forma rejects the requirement that every represented property must become equivalent Java state.
+```java
+final class StudentDto {
+
+    private String id;
+    private String name;
+    private String email;
+    private String description;
+    private Integer age;
+
+    // getters/setters
+}
+```
+
+This makes the Java class itself coincide with the notion of data:
+
+```text
+data = instance of a class reproducing its structure
+```
+
+Once the state has been exposed through getters, setters, record accessors, or similar APIs, operations over that data tend to become procedural and are implemented by external components:
+
+```text
+validator.validate(student)
+mapper.map(student)
+serializer.serialize(student)
+merger.merge(student, patch)
+converter.convert(student)
+```
+
+The object becomes primarily a passive state container while other objects extract, inspect, transform, and validate its contents.
+
+The same logical information is then often duplicated across technical boundaries:
+
+```text
+HTTP request
+     ↓
+Request DTO
+     ↓ mapping
+Domain DTO
+     ↓ mapping
+Persistence Entity
+     ↓ mapping
+Message DTO
+```
+
+Each class reproduces a shape of the data even when very little behavior actually depends on most of that shape.
+
+## Not all data is decisionally relevant
+
+Mapping data into Java classes tends to promote every property of the source representation into explicit Java state, regardless of whether the application actually uses that property to make decisions.
+
+For example:
+
+```json
+{
+  "id": "S-42",
+  "name": "Alice",
+  "status": "ACTIVE",
+  "description": "Student imported from external system"
+}
+```
+
+Application behavior may depend only on:
+
+```text
+id
+status
+```
+
+while `description` may only need to survive transport, persistence, transformation, or later rendering.
+
+Nevertheless, the conventional approach usually introduces a Java field for `description` together with constructor parameters, accessors, mapping configuration, copying logic, serialization annotations, and equivalent fields in other DTOs.
+
+Forma rejects this requirement.
+
+A `Data` object encapsulates represented information, but individual portions of that information only need to be interpreted when explicitly requested.
+
+Therefore:
 
 > **The presence of information does not imply the need for an equivalent Java attribute.**
 
+And:
+
 > **Data should be represented without requiring its entire structure to become Java object state.**
 
-A Java POJO is therefore one possible representation of data, not the definition of data itself.
+## Object-oriented data representation
+
+Forma treats a datum as an object representing information in whatever source representation currently owns it.
+
+Examples include:
+
+```text
+JSON        → JsonData
+JDBC row    → JdbcData
+Java object → PojoData
+Map         → HashtableData
+CSV/record  → PositionalData
+```
+
+These objects are not necessarily temporary stages on the way toward a DTO. They are themselves object-oriented representations of data.
+
+A Java POJO is therefore:
+
+> **one possible representation of data, not the definition of data itself.**
+
+Forma is inspired by parsing objects: rather than parsing a representation into a passive object and subsequently working on exposed state, the object encapsulating the representation remains responsible for representing that information.
 
 ## Decision drivers
 
 Forma should:
 
 * model data through objects rather than passive state containers;
-* preserve information that is not currently decisionally relevant;
+* avoid requiring a Java class whose fields reproduce every data shape;
+* avoid requiring every source property to become eagerly materialized Java state;
+* preserve information even when it is not currently decisionally relevant;
 * support partial and intermediate data;
 * allow different physical representations of the same information;
-* separate representation coordinates, representation values, and semantic meaning;
+* allow data to be transformed and composed before assigning business meaning;
+* separate representation concerns from semantic structure and validation;
 * avoid representation-specific casts or type inspection in semantic attributes;
 * make valid semantic objects valid by construction;
+* enable object composition instead of procedural mapping pipelines;
 * remain independent from persistence, messaging, CQRS, event sourcing, HTTP, and other application frameworks.
 
 ## Decision
@@ -48,7 +151,7 @@ ModelAttribute<T>
 Model
 ```
 
-They separate three concerns:
+They separate three concerns that must not collapse into one another:
 
 ```text
 representation coordinates
@@ -60,6 +163,8 @@ semantic meaning
 
 `Data` represents information without claiming conformance to a particular business structure.
 
+Conceptually:
+
 ```java
 public interface Data extends Iterable<Property> {
 
@@ -67,45 +172,94 @@ public interface Data extends Iterable<Property> {
 }
 ```
 
-A `Data` deliberately does not accept `AttributeName` as a lookup coordinate. It must be able to exist independently from any `Model` or `Metadata` that may later be associated with it and therefore speaks only in representation coordinates.
+A `Data` may be complete, partial, projected, merged, filtered, dynamically backed by another source, or unrelated to any known business model.
 
-Keeping `Data` iterable over `Property` is important because properties remain first-class representation objects over which compositions such as merging, filtering, and projection can operate.
+`Data` deliberately does not accept `AttributeName` as a lookup coordinate. A data representation must be able to exist independently from any `Model` or `Metadata` that may later be associated with it.
 
-A `Data` implementation is not required to eagerly materialize its representation into an equivalent Java object graph. Concrete implementations remain free to cache, materialize, stream, or lazily interpret information according to their semantics.
+It therefore speaks only in representation coordinates.
 
 > **Data is transformable.**
 
-### PropertyReference
+### Data does not require eager materialization
 
-`PropertyReference` is the only coordinate abstraction required by Forma core:
+A `Data` implementation is not required to extract every property from its underlying source when constructed.
+
+For example:
 
 ```java
-public interface PropertyReference {
+new JsonData(json)
+```
+
+may retain the JSON representation itself. If no consumer ever asks for `description`, there is no inherent requirement for Forma to convert that value into a Java `String`.
+
+This is not mandatory laziness. It is the stronger architectural property that:
+
+> **Forma does not require representation to be materialized into an equivalent Java object graph.**
+
+Concrete implementations remain free to cache, materialize, stream, or lazily interpret information according to their own semantics.
+
+### Data may be structurally immutable while representing mutable information
+
+A `Data` object's identity and configuration may be immutable while the source it represents changes independently.
+
+Forma does not equate structural object immutability with temporal stability of the represented source. Implementations requiring snapshot semantics must establish those semantics explicitly.
+
+### Data composition
+
+Because `Data` does not imply semantic validity, it may be transformed before binding.
+
+Examples may include:
+
+```text
+MergedData
+ProjectedData
+FilteredData
+```
+
+For example:
+
+```java
+Data candidate = new MergedData(
+    new JdbcData(row),
+    new JsonData(request)
+);
+```
+
+`MergedData` defines merge semantics only. It does not decide whether the resulting information constitutes a valid Student. That responsibility belongs to `Metadata`.
+
+Keeping `Data` iterable over `Property` is important because properties remain first-class representation objects over which compositions can operate.
+
+### PropertyReference
+
+`PropertyReference` is a coordinate understood by a concrete `Data` representation.
+
+It is intentionally separate from `AttributeName`.
+
+Possible representations may use:
+
+```text
+PropertyName
+position
+path
+JDBC column
+JSON pointer
+POJO member
+```
+
+A named coordinate may be represented by:
+
+```java
+public interface PropertyName extends PropertyReference {
 }
 ```
 
-The contract is deliberately opaque. Forma core does not classify representation coordinates as names, positions, paths, columns, members, or any other particular shape.
-
-Concrete representations are free to define the coordinates that naturally describe them:
-
-```java
-record JsonField(String name) implements PropertyReference {}
-record JdbcColumn(String name) implements PropertyReference {}
-record Position(int index) implements PropertyReference {}
-record PropertyPath(List<String> segments) implements PropertyReference {}
-```
-
-These examples are representation concepts, not core semantic concepts.
-
-A named coordinate has no privileged status over a positional or path-based coordinate. For this reason Forma does not introduce a core `PropertyName` specialization. Such a type may exist inside a representation-specific module if that representation benefits from it.
-
-This establishes:
-
-> **Forma core knows that data has coordinates, not what shape those coordinates have.**
+but Forma must not assume that every property is naturally name-based.
 
 ### Property
 
-A `Property` is an individually interpretable portion of `Data`:
+A `Property` is an individually interpretable portion of `Data`.
+
+It exposes a representation-neutral value object:
 
 ```java
 public interface Property {
@@ -114,13 +268,21 @@ public interface Property {
 }
 ```
 
-Forma deliberately rejects `Object value()` and does not force every value through `String`, `byte[]`, or another universal carrier.
+Forma deliberately rejects a raw universal carrier such as:
+
+```java
+Object value();
+```
+
+because that would move casts and representation interpretation into clients.
+
+It also rejects forcing every value through a single `String`, `byte[]`, or `InputStream`, because that may discard information already available in the underlying representation and cause unnecessary re-encoding and parsing.
 
 ### PropertyValue
 
 `PropertyValue` is the small common vocabulary through which primitive represented values can be interpreted.
 
-The initial contract is deliberately small:
+Conceptually, the initial contract is deliberately small:
 
 ```java
 public interface PropertyValue {
@@ -131,15 +293,85 @@ public interface PropertyValue {
 }
 ```
 
-Concrete value objects such as `TextValue` and `NumberValue` own representation-level conversion rules. This centralizes primitive conversion semantics instead of repeating them in every JSON, JDBC, POJO, Map, or other concrete property implementation.
+Additional fundamental interpretations such as booleans, nested data, collections, binary values, or temporal values must be introduced only when concrete representations demonstrate that they belong in the common model.
 
-`PropertyValue` remains representation-level and must not contain business concepts such as `Email`, `Money`, or `StudentId`; those belong to `Attribute`.
+`PropertyValue` is not an interpreter or closed visitor. This avoids requiring every semantic attribute to implement methods for value kinds that it cannot consume.
+
+Instead, concrete value objects own representation-level conversion rules:
+
+```text
+TextValue
+NumberValue
+```
+
+For example:
+
+```text
+TextValue("42").asText()   -> "42"
+TextValue("42").asNumber() -> 42
+NumberValue(42).asNumber()  -> 42
+NumberValue(42).asText()    -> "42"
+```
+
+A conversion is valid when the represented information admits that interpretation. A textual value containing a valid number may therefore legitimately provide `asNumber()`. A textual value that cannot be interpreted numerically fails at that representation boundary.
+
+This design centralizes primitive conversion logic in reusable value objects instead of repeating it in every `JsonProperty`, `JdbcProperty`, `PojoProperty`, or other concrete `Property` implementation.
+
+For example:
+
+```text
+JsonStringProperty ─┐
+MapStringProperty  ─┼─> TextValue
+PojoStringProperty ─┘
+```
+
+The common vocabulary must remain representation-level. It must not contain business concepts such as:
+
+```text
+Email
+Money
+StudentId
+```
+
+Those belong to `Attribute`.
+
+### Property transformations
+
+Because `Property` encapsulates representation, decorators can transform representation without involving business semantics.
+
+Possible examples include:
+
+```text
+DecryptedProperty
+DecodedProperty
+DecompressedProperty
+```
+
+Conceptually:
+
+```text
+physical representation
+        ↓
+Property decorator
+        ↓
+PropertyValue
+        ↓
+Attribute interpretation
+        ↓
+semantic value
+```
+
+This establishes:
 
 > **Property transformations operate on representation. Attribute interpretation establishes meaning.**
 
 ### Attribute
 
-`Attribute<T>` describes a semantic coordinate of a model:
+`Attribute<T>` describes a semantic coordinate of a model.
+
+An attribute determines what semantic value is expected, how a represented property is interpreted, and which rules must hold for that value.
+
+Conceptually:
 
 ```java
 public interface Attribute<T> {
@@ -150,17 +382,85 @@ public interface Attribute<T> {
 }
 ```
 
-An attribute obtains the primitive interpretation it needs from `PropertyValue` and establishes semantic meaning and validity. It does not know how its semantic identity is associated with a concrete representation coordinate.
+An attribute obtains the primitive interpretation it needs from `PropertyValue`.
+
+For example, a textual family may conceptually bind through:
+
+```java
+property.value().asText()
+```
+
+while a numeric family may use:
+
+```java
+property.value().asNumber()
+```
+
+This avoids `instanceof`, `Class<?>`, representation-specific property types, capability witness objects, and closed visitor methods inside semantic attributes.
+
+Primitive semantic interpretations may include:
+
+```text
+TextAttribute
+IntAttribute
+DecimalAttribute
+BooleanAttribute
+```
+
+while composition may add stronger semantics such as:
+
+```text
+NonNullAttribute
+PositiveAttribute
+EmailAttribute
+MoneyAttribute
+```
+
+Interpretation and validation therefore remain object compositions rather than a sequence of external procedures.
+
+### Attribute identity
+
+Two attributes do not have the same identity merely because they expose the same Java type or textual name.
+
+For example:
+
+```text
+Student.email
+Teacher.email
+```
+
+remain distinct even if both produce `Email`.
+
+Likewise, `Student.name` and `Course.name` remain distinct even if both produce textual values.
 
 ### AttributeName<T>
 
-`AttributeName<T>` identifies a semantic coordinate. It is deliberately distinct from `PropertyReference`.
+Attribute names may carry their semantic result type:
 
-Two attributes can expose the same Java type or similar textual labels while remaining semantically distinct. Conversely, one semantic attribute may be represented by differently shaped coordinates in different data sources.
+```java
+AttributeName<Email> email;
+AttributeName<Integer> age;
+```
+
+allowing typed APIs such as:
+
+```java
+Email email = model.value(emailName);
+```
+
+without casts in application code.
+
+The generic type does not by itself provide runtime safety because of Java type erasure. The invariant must be established while constructing the `Model`: an `AttributeName<T>` may only refer to a compatible `ModelAttribute<T>` created through successful metadata binding.
 
 ### PropertyMapping
 
-`PropertyMapping` belongs to the binding relationship between semantic metadata and represented data:
+`PropertyMapping` belongs to the relationship between semantic metadata and a concrete data representation.
+
+It does not belong intrinsically to `Data`: a `Data` object must remain valid without knowing that it will ever be associated with a model.
+
+It also does not belong intrinsically to an `Attribute`: semantic attributes must remain unaware of physical representation coordinates.
+
+Conceptually:
 
 ```java
 public interface PropertyMapping {
@@ -169,37 +469,33 @@ public interface PropertyMapping {
 }
 ```
 
-It belongs neither intrinsically to `Data` nor to `Attribute` or `Metadata` as owned state. It is supplied when a particular semantic model is associated with a particular representation.
-
-The relationship is:
+The mapping therefore connects:
 
 ```text
 AttributeName
-     |
-     v
+     ↓
 PropertyMapping
-     |
-     v
+     ↓
 PropertyReference
-     |
-     v
-    Data
-     |
-     v
-  Property
 ```
 
-The mapping may be explicit or may embody a representation convention. Crucially, the contract does not require textual name equality and does not require the source coordinate to be textual at all.
+Different mapping strategies may express different representation conventions, for example:
 
-The same `Metadata` can therefore bind differently represented `Data`, and the same `Data` can participate in different semantic bindings without itself acquiring semantic knowledge.
+```text
+same name
+UPPER_CASE
+camelCase -> snake_case
+explicit attribute -> property mapping
+legacy field aliases
+```
 
-> **Data knows representation. Metadata knows semantics. PropertyMapping relates their coordinates.**
-
-> **PropertyMapping belongs to the binding relationship, not to Data and not to Metadata.**
+The same `Metadata` may consequently bind different data representations through different mappings, and the same `Data` may be interpreted through different semantic associations without becoming aware of them.
 
 ### Metadata
 
-`Metadata` defines semantic structure and invariants and receives the mapping required for a particular binding:
+`Metadata` defines the semantic structure and invariants of a model.
+
+Binding receives both represented data and the strategy that associates semantic attributes with representation coordinates:
 
 ```java
 public interface Metadata extends Iterable<Attribute<?>> {
@@ -228,7 +524,7 @@ Attribute.bind(...)
 ModelAttribute
 ```
 
-Addressing and interpretation remain separate concerns:
+This keeps addressing and interpretation as separate concerns:
 
 ```text
 addressing:
@@ -238,21 +534,41 @@ interpretation:
 Property -> PropertyValue -> semantic value
 ```
 
-A semantic attribute can consequently bind to a named field, a positional value, a nested path, a JDBC column, a POJO member, or another coordinate without changing the semantic model or the Forma core API.
+Property lookup therefore does not imply textual name equality. A semantic `Student.email` may map to JSON field `e_mail_address`, while `Student.birthDate` may map to position 7 in a positional representation.
+
+Representation coordinates and semantic attribute identities remain separate concepts.
 
 ### Binding is construction
 
 `Metadata.bind(Data, PropertyMapping)` establishes semantic validity while constructing the model.
 
+A successful result must never require a subsequent:
+
+```java
+model.isValid()
+```
+
+or:
+
+```java
+validator.validate(model)
+```
+
+before use.
+
 > **Metadata binding is construction, not validation after construction.**
+
+Therefore:
 
 > **A Model either exists in a valid state, or it does not exist.**
 
-The exact representation of binding failures remains a separate API decision.
+The representation of binding failures and whether multiple violations are accumulated remain separate API decisions.
 
 ### ModelAttribute
 
-`ModelAttribute<T>` represents successful interpretation and validation of represented information against an `Attribute<T>`:
+`ModelAttribute<T>` represents the successful binding of an `Attribute<T>` against concrete data.
+
+Conceptually:
 
 ```java
 public interface ModelAttribute<T> {
@@ -263,9 +579,15 @@ public interface ModelAttribute<T> {
 }
 ```
 
+Its value has already crossed the representation-to-semantics boundary and has already been validated by the attribute.
+
+A `ModelAttribute` is therefore evidence that a concrete portion of represented data satisfies a semantic attribute.
+
 ### Model
 
-A `Model` represents `Data` that has successfully acquired semantic structure through `Metadata`:
+A `Model` represents `Data` that has successfully acquired a semantic structure through `Metadata`.
+
+Conceptually:
 
 ```java
 public interface Model {
@@ -278,61 +600,114 @@ public interface Model {
 }
 ```
 
-A Model establishes a valid semantic interpretation over data rather than reproducing the entire data shape as Java state.
+A `Model` differs fundamentally from a DTO. A DTO usually reproduces a data shape as Java state; a Model establishes a valid semantic interpretation over data.
+
+The underlying information does not necessarily have to be copied into equivalent Java fields.
 
 > **Model is trustworthy.**
 
-Retaining access to the underlying `Data` allows information that is not currently decisionally relevant to survive without being promoted into `ModelAttribute`s.
+### Access to underlying Data
 
-### Representation-specific models
+A `Model` may retain access to the `Data` from which it was constructed.
 
-Objects such as `JsonData`, `JdbcData`, `PojoData`, and positional data implementations may define their own `PropertyReference` implementations. Forma core remains unaware of those coordinate shapes.
+This enables additional transformations without forcing all information into `ModelAttribute`s.
 
-Likewise, output rendering is orthogonal to both source representation and semantic validity and should be introduced through composition rather than by requiring `Data` or `Model` to implement output formats directly.
+For example:
+
+```text
+Data
+ ├─ id            → ModelAttribute
+ ├─ status        → ModelAttribute
+ ├─ description   → retained as Data
+ └─ sourceNotes   → retained as Data
+```
+
+The Model can reason about `id` and `status` without requiring `description` or `sourceNotes` to become explicit semantic Java state merely to preserve them.
+
+### PojoData and PojoModel
+
+`PojoData` and `PojoModel` represent different concepts.
+
+`PojoData` treats a Java object as a source representation and does not inherently claim that the Java class defines a semantic model.
+
+`PojoModel` may instead compose `PojoData` with metadata derived from the class, annotations, reflection, or another class-description mechanism.
+
+This preserves the principle that a Java class is one possible representation rather than the universal definition of data.
+
+### Cross-model compatibility
+
+Two distinct attributes may share a semantic type:
+
+```text
+Student.email : Attribute<Email>
+Teacher.email : Attribute<Email>
+Contact.email : Attribute<Email>
+```
+
+They remain separate attributes but may participate in type-safe mappings or projections.
+
+Semantic value objects such as `Email`, `Money`, `StudentId`, or `CountryCode` can make such compatibility stronger than broad Java types such as `String`.
+
+The exact projection API is outside the scope of this ADR.
+
+### Rendering is orthogonal
+
+Neither `Data` nor `Model` is required to implement a printing or serialization capability.
+
+Output representation is independent from input representation. A `JdbcData` may legitimately be rendered as JSON.
+
+Rendering should therefore be introduced through composition such as:
+
+```text
+JsonPrintableData(Data)
+JsonPrintableModel(Model)
+XmlPrintableData(Data)
+```
+
+rather than forcing `Data` or `Model` to implement output-format interfaces directly.
 
 ## Conceptual model
 
 ```text
-                   REPRESENTATION
-                        │
-                        ▼
-                      Data
-                        │
-               PropertyReference
-                        │
-                        ▼
-                    Property
-                        │
-                        ▼
-                  PropertyValue
-                        │
-                        │ interpreted by
-                        ▼
-                    Attribute
-                        │
-                        │ defined by
-                        ▼
-                     Metadata
-                        │
-                        │ bind using
-                        ▼
-                 PropertyMapping
-                        │
-                        ▼
-                      Model
-                        │
-                  ModelAttribute
-                        │
-                        ▼
-                     SEMANTICS
+                  REPRESENTATION
+                       │
+                       ▼
+                     Data
+                       │
+                 Properties
+                       │
+                 PropertyValue
+                       │
+                       │ interpreted by
+                       ▼
+                   Attributes
+                       │
+                       │ defined by
+                       ▼
+                    Metadata
+                       │
+              + PropertyMapping
+                       │
+                       │ bind
+                       ▼
+                     Model
+                       │
+                 ModelAttributes
+                       │
+                       ▼
+                    SEMANTICS
 ```
 
-The binding coordinate relationship can be summarized independently as:
+The coordinate relationship remains orthogonal:
 
 ```text
-semantic coordinate                         representation coordinate
-
-AttributeName ───── PropertyMapping ─────> PropertyReference ─────> Data
+AttributeName
+     ↓
+PropertyMapping
+     ↓
+PropertyReference
+     ↓
+Data
 ```
 
 ## Fundamental principles
@@ -343,9 +718,13 @@ AttributeName ───── PropertyMapping ─────> PropertyReference
 
 > **Data should be represented without requiring its entire structure to become Java object state.**
 
-> **Data knows representation. Metadata knows semantics. PropertyMapping relates their coordinates.**
+> **Data is transformable.**
 
-> **Forma core knows that data has coordinates, not what shape those coordinates have.**
+> **Data knows representation coordinates, not semantic coordinates.**
+
+> **PropertyMapping belongs to the binding relationship.**
+
+> **PropertyValue owns primitive representation interpretation. Attribute interpretation establishes meaning.**
 
 > **Property transformations operate on representation. Attribute interpretation establishes meaning.**
 
@@ -357,55 +736,145 @@ AttributeName ───── PropertyMapping ─────> PropertyReference
 
 ## Consequences
 
-Forma avoids privileging named representations over positional, hierarchical, column-oriented, or other coordinate systems.
+Forma avoids requiring a dedicated Java class for every shape of data entering or leaving an application.
 
-Representation-specific coordinate types can evolve independently without expanding the Forma core vocabulary.
+Information irrelevant to current decisions can remain encapsulated in its source representation without becoming unnecessary Java fields.
 
-Semantic attributes remain independent from physical representation coordinates.
+Data may retain properties not currently represented as model attributes, avoiding accidental information loss while also avoiding artificial expansion of the semantic object model.
 
-A `PropertyMapping` can associate the same semantic metadata with radically different source layouts.
+Different physical representations can participate in the same semantic model through different `PropertyMapping` strategies.
 
-Different mappings can associate the same represented `Data` with different semantic structures without modifying the `Data` itself.
+Partial data becomes a first-class concept rather than an invalid DTO.
 
-The abstraction requires callers to provide a mapping when binding. This is deliberate: the association between semantics and representation is contextual information and should not be hidden inside either side.
+Merge, projection, filtering, decoding, decryption, and similar operations can occur at the representation layer before semantic binding.
+
+Primitive representation conversions are centralized in reusable `PropertyValue` implementations rather than duplicated across every representation-specific `Property`.
+
+Semantic attributes no longer require `instanceof`, representation-specific property types, capability witness objects, or a closed interpreter whose future methods force unrelated attributes to implement impossible cases.
+
+The common `PropertyValue` vocabulary becomes an explicit design boundary and must therefore remain deliberately small.
 
 ## Alternatives considered
 
-### Data directly accepts AttributeName
+### Represent every data shape with a POJO or DTO
 
-Rejected because it couples arbitrary represented data to a semantic model it may never participate in.
+Rejected as Forma's fundamental model.
 
-### Attribute owns its representation coordinate
+This duplicates source structure in Java, often materializes properties which have no behavioral relevance, and encourages external procedural manipulation through accessors and utility classes.
 
-Rejected because semantic attributes would become coupled to JSON names, JDBC columns, POJO members, positional indexes, or other physical layouts.
+POJOs remain supported as one representation through `PojoData`.
 
-### Metadata permanently owns the mapping
+### Every Data has Metadata
 
-Rejected as the fundamental model because the same metadata may be applied to differently represented data. Mapping belongs to a particular binding relationship.
+Rejected.
 
-### Core PropertyName specialization
+Partial and intermediate information may not yet satisfy a complete semantic structure. `Data` exists independently; successful metadata binding produces a `Model`.
 
-Rejected. A name is only one possible representation coordinate and has no behavior or invariant required by Forma core beyond `PropertyReference`. Keeping `PropertyName` in core would privilege named representations and add a classification that binding does not need.
+### Data directly exposes semantic attributes
+
+For example:
+
+```java
+Property property(AttributeName<?> name);
+```
+
+or:
+
+```java
+<T> T value(Attribute<T> attribute);
+```
+
+Rejected as the fundamental `Data` API.
+
+A `Data` object must not need to know that it will ever participate in a semantic model. Semantic-to-representation association is supplied separately through `PropertyMapping` during binding.
+
+### Property uses a closed interpreter
+
+For example:
+
+```java
+public interface Property {
+
+    <T> T describe(PropertyValue<T> interpreter);
+}
+```
+
+with an interpreter containing methods such as `text`, `number`, `boolean`, and so on.
+
+Rejected.
+
+Adding a new represented value kind would force every existing specialized interpreter, such as a textual attribute, to implement a method for a value kind it cannot meaningfully consume, usually only to reject it. That makes the interpreter vocabulary a closed sum and spreads unsupported-case methods across semantic classes.
+
+### Representation-specific Property capability interfaces
+
+For example:
+
+```text
+TextProperty
+NumberProperty
+```
+
+combined with casts, `instanceof`, `Class<?>`, or capability witness objects.
+
+Rejected for the core binding boundary.
+
+These approaches either couple semantic attributes to runtime type inspection or introduce technical witness objects that do not represent a useful domain concept.
 
 ### Property exposes Object
 
-Rejected because it shifts representation interpretation and casts into clients.
+Rejected because it shifts type interpretation and casts to clients.
 
-### Closed PropertyValue interpreter
+### Property has one universal byte or textual representation
 
-Rejected after experimentation. A visitor containing `text`, `number`, `boolean`, and other methods forces specialized semantic attributes to implement value kinds they cannot consume. Attributes are naturally partial interpreters, while a closed visitor models a total interpretation over all variants.
+Rejected because it throws away information already available from source-specific representations and may introduce unnecessary serialization and parsing.
 
-### Capability interfaces plus instanceof
+### Property conversion logic lives in every concrete Property
 
-Rejected after experimentation. Interfaces such as `TextProperty` make source capabilities explicit but require runtime type inspection or additional witness objects when heterogeneous metadata binds generic properties.
+Rejected.
+
+If `JsonStringProperty`, `JdbcVarcharProperty`, and `PojoStringProperty` all implement the same `asText`, `asNumber`, and related conversion logic independently, representation adapters duplicate behavior that belongs to the represented value itself.
+
+Reusable value objects such as `TextValue` and `NumberValue` centralize that behavior.
+
+### Model may exist in an invalid state
+
+Rejected. Validity is a construction invariant.
+
+### Data and Model implement output formats directly
+
+Rejected. Rendering is an orthogonal interpretation that should be composed independently.
 
 ## Scope
 
-Forma is an independent library. Its semantic model must not depend on Kern, Weave, CQRS, Event Sourcing, HTTP, JDBC, JSON, persistence frameworks, or messaging frameworks.
+Forma is an independent library.
+
+Its semantic model must not depend on:
+
+```text
+Kern
+Weave
+CQRS
+Event Sourcing
+HTTP
+JDBC
+JSON
+persistence frameworks
+messaging frameworks
+```
 
 Representation-specific integrations may depend on external technologies in separate artifacts.
 
-The library is named **Forma**, uses root package `it.riccisi.forma`, and is positioned as:
+The library is named:
+
+# **Forma**
+
+with the intended root package:
+
+```text
+it.riccisi.forma
+```
+
+and the positioning:
 
 > **Forma — an object-oriented model for data.**
 
@@ -413,15 +882,18 @@ The library is named **Forma**, uses root package `it.riccisi.forma`, and is pos
 
 The following details remain deliberately unresolved:
 
+* which additional primitive interpretations, beyond text and number, belong in the fundamental `PropertyValue` vocabulary;
+* exact conversion and failure semantics for incompatible `PropertyValue` interpretations;
+* concrete `PropertyReference` kinds required by JSON, JDBC, POJO, and positional data;
+* standard `PropertyMapping` strategies such as identity, explicit, case conversion, and naming conventions;
 * the exact failure model of `Metadata.bind`;
 * fail-fast versus accumulated validation violations;
-* missing-property semantics;
-* the exact role and runtime identity semantics of `AttributeName<T>`;
-* whether `Model` lookup should expose additional forms;
-* whether binding remains lazy where possible or evaluates every required attribute;
+* the definitive set of primitive `Attribute<T>` implementations and decorators;
+* the exact runtime identity semantics of `AttributeName<T>`;
+* whether binding remains lazy where possible or always evaluates every required attribute;
+* whether `ModelAttribute` stores its semantic value or may itself remain an interpreted view;
 * canonical model representation and equality;
 * business identity based on combinations of attributes;
 * typed projections between models;
 * concrete `Data` transformation algebra;
-* media-independent printing and serialization APIs;
-* additional `PropertyValue` primitive interpretations when justified by concrete representations.
+* media-independent printing and serialization APIs.
