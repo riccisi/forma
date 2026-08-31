@@ -1,0 +1,199 @@
+package it.riccisi.forma;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import org.cactoos.Text;
+import org.junit.jupiter.api.Test;
+
+final class PropertyAddressingContractTest {
+
+    @Test
+    void namedRepresentationDoesNotAssumeSemanticNameEquality() {
+        final AttributeName<String> email = new SemanticName();
+        final PropertyReference field = new NamedReference("e_mail_address");
+        final Metadata metadata = new SingleAttributeMetadata(new StringAttribute(email));
+        final Data data = new ReferencedData(
+            Map.of(field, new TextProperty("alice@example.com"))
+        );
+
+        final Model model = metadata.bind(
+            data,
+            new ExplicitMapping(Map.of(email, field))
+        );
+
+        assertEquals("alice@example.com", model.value(email));
+    }
+
+    @Test
+    void positionalRepresentationUsesTheSameBindingProtocol() {
+        final AttributeName<String> email = new SemanticName();
+        final PropertyReference position = new PositionalReference(7);
+        final Metadata metadata = new SingleAttributeMetadata(new StringAttribute(email));
+        final Data data = new ReferencedData(
+            Map.of(position, new TextProperty("alice@example.com"))
+        );
+
+        final Model model = metadata.bind(
+            data,
+            new ExplicitMapping(Map.of(email, position))
+        );
+
+        assertEquals("alice@example.com", model.value(email));
+    }
+
+    @Test
+    void nestedRepresentationUsesTheSameBindingProtocol() {
+        final AttributeName<String> email = new SemanticName();
+        final PropertyReference path = new PathReference(List.of("contact", "email"));
+        final Metadata metadata = new SingleAttributeMetadata(new StringAttribute(email));
+        final Data data = new ReferencedData(
+            Map.of(path, new TextProperty("alice@example.com"))
+        );
+
+        final Model model = metadata.bind(
+            data,
+            new ExplicitMapping(Map.of(email, path))
+        );
+
+        assertEquals("alice@example.com", model.value(email));
+    }
+
+    @Test
+    void mappingBelongsToEachBindingRelationship() {
+        final AttributeName<String> email = new SemanticName();
+        final PropertyReference first = new NamedReference("email");
+        final PropertyReference second = new NamedReference("e_mail");
+        final Metadata metadata = new SingleAttributeMetadata(new StringAttribute(email));
+        final Data data = new ReferencedData(
+            Map.of(
+                first, new TextProperty("first@example.com"),
+                second, new TextProperty("second@example.com")
+            )
+        );
+
+        final Model firstModel = metadata.bind(
+            data,
+            new ExplicitMapping(Map.of(email, first))
+        );
+        final Model secondModel = metadata.bind(
+            data,
+            new ExplicitMapping(Map.of(email, second))
+        );
+
+        assertSame(data, firstModel.data());
+        assertSame(data, secondModel.data());
+        assertEquals("first@example.com", firstModel.value(email));
+        assertEquals("second@example.com", secondModel.value(email));
+    }
+
+    private record SemanticName() implements AttributeName<String> {
+    }
+
+    private record NamedReference(String value) implements PropertyReference {
+    }
+
+    private record PositionalReference(int value) implements PropertyReference {
+    }
+
+    private record PathReference(List<String> segments) implements PropertyReference {
+    }
+
+    private record TextProperty(String text) implements Property {
+
+        @Override
+        public PropertyValue value() {
+            return new TextValue(this.text);
+        }
+    }
+
+    private static final class StringAttribute extends TextAttribute<String> {
+
+        private final AttributeName<String> name;
+
+        private StringAttribute(final AttributeName<String> name) {
+            this.name = name;
+        }
+
+        @Override
+        public AttributeName<String> name() {
+            return this.name;
+        }
+
+        @Override
+        protected ModelAttribute<String> bind(final Text value) {
+            try {
+                return new BoundAttribute<>(this.name, value.asString());
+            } catch (final Exception err) {
+                throw new IllegalArgumentException(err);
+            }
+        }
+    }
+
+    private record ReferencedData(
+        Map<PropertyReference, Property> properties
+    ) implements Data {
+
+        @Override
+        public Property property(final PropertyReference reference) {
+            return this.properties.get(reference);
+        }
+
+        @Override
+        public Iterator<Property> iterator() {
+            return this.properties.values().iterator();
+        }
+    }
+
+    private record ExplicitMapping(
+        Map<AttributeName<?>, PropertyReference> references
+    ) implements PropertyMapping {
+
+        @Override
+        public PropertyReference property(final AttributeName<?> attribute) {
+            return this.references.get(attribute);
+        }
+    }
+
+    private record SingleAttributeMetadata(Attribute<?> attribute) implements Metadata {
+
+        @Override
+        public Model bind(final Data data, final PropertyMapping mapping) {
+            final ModelAttribute<?> bound = this.attribute.bind(
+                data.property(mapping.property(this.attribute.name()))
+            );
+            return new BoundModel(
+                this,
+                data,
+                Map.of(bound.name(), bound.value())
+            );
+        }
+
+        @Override
+        public Iterator<Attribute<?>> iterator() {
+            return List.<Attribute<?>>of(this.attribute).iterator();
+        }
+    }
+
+    private record BoundAttribute<T>(
+        AttributeName<T> name,
+        T value
+    ) implements ModelAttribute<T> {
+    }
+
+    private record BoundModel(
+        Metadata metadata,
+        Data data,
+        Map<AttributeName<?>, Object> values
+    ) implements Model {
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T value(final AttributeName<T> name) {
+            return (T) this.values.get(name);
+        }
+    }
+}
