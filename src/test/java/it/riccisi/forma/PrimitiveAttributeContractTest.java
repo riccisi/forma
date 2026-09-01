@@ -70,6 +70,45 @@ final class PrimitiveAttributeContractTest {
     }
 
     @Test
+    void composesNumericConstraintAroundPrimitiveAttribute() {
+        final AttributeName<Integer> name = new Name<>();
+        final Attribute<Integer> attribute = new PositiveAttribute<>(
+            new IntegerAttribute(name)
+        );
+        final ModelAttribute<Integer> bound = attribute.bind(
+            new ValueProperty(new Reference(), new NumberValue(42))
+        );
+        assertEquals(name, bound.name());
+        assertEquals(42, bound.value());
+    }
+
+    @Test
+    void rejectsZeroThroughNumericConstraint() {
+        final Attribute<Integer> attribute = new PositiveAttribute<>(
+            new IntegerAttribute(new Name<>())
+        );
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> attribute.bind(
+                new ValueProperty(new Reference(), new NumberValue(0))
+            )
+        );
+    }
+
+    @Test
+    void rejectsNegativeValueThroughNumericConstraint() {
+        final Attribute<Integer> attribute = new PositiveAttribute<>(
+            new IntegerAttribute(new Name<>())
+        );
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> attribute.bind(
+                new ValueProperty(new Reference(), new NumberValue(-1))
+            )
+        );
+    }
+
+    @Test
     void rejectsNonIntegralNumberAsIntegerSemantics() {
         final Attribute<Integer> attribute = new IntegerAttribute(new Name<>());
         assertThrows(
