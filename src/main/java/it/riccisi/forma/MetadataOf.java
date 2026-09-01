@@ -16,7 +16,7 @@ public final class MetadataOf implements Metadata {
     }
 
     public MetadataOf(@NonNull final Iterable<Attribute<?>> attributes) {
-        this.attributes = attributes;
+        this.attributes = new ListOf<>(attributes);
     }
 
     @Override
