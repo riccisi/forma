@@ -1,5 +1,6 @@
 package it.riccisi.forma;
 
+import lombok.AccessLevel;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.cactoos.iterable.Mapped;
@@ -10,10 +11,10 @@ import java.util.Iterator;
 /**
  * Model established by binding represented data to metadata.
  *
- * <p>Construction eagerly binds every semantic attribute. Consequently an
+ * <p>Construction eagerly binds every semantic attribute. Consequently, an
  * instance exists only after all metadata invariants have been satisfied.
  */
-@RequiredArgsConstructor
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ModelOf implements Model {
 
     @NonNull private final Metadata metadata;
