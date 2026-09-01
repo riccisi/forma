@@ -14,7 +14,7 @@ final class ModelContractTest {
 
     @Test
     void sameSemanticAttributeReadsHeterogeneousRepresentations() {
-        final AttributeName<Email> name = new EmailName();
+        final AttributeName<Email> name = new AttributeNameOf<>("email");
         final Attribute<Email> email = new EmailAttribute(name);
         final PropertyReference reference = new NamedReference("email");
 
@@ -46,7 +46,7 @@ final class ModelContractTest {
 
     @Test
     void mappingBelongsToBindingRelationship() {
-        final AttributeName<Email> name = new EmailName();
+        final AttributeName<Email> name = new AttributeNameOf<>("email");
         final PropertyReference field = new NamedReference("e_mail");
         final Attribute<Email> email = new EmailAttribute(name);
         final Metadata metadata = new SingleAttributeMetadata(email);
@@ -64,9 +64,6 @@ final class ModelContractTest {
             new AttributeOf<>(name, model).value().toString()
         );
         assertSame(name, model.iterator().next().name());
-    }
-
-    private record EmailName() implements AttributeName<Email> {
     }
 
     private record NamedReference(String value) implements PropertyReference {
