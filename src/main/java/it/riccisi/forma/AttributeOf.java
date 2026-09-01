@@ -1,5 +1,13 @@
 package it.riccisi.forma;
 
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import org.cactoos.Scalar;
+import org.cactoos.scalar.FirstOf;
+import org.cactoos.scalar.Mapped;
+import org.cactoos.scalar.Sticky;
+import org.cactoos.scalar.Unchecked;
+
 import java.util.NoSuchElementException;
 
 /**
@@ -7,31 +15,38 @@ import java.util.NoSuchElementException;
  *
  * @param <T> semantic value type
  */
+@RequiredArgsConstructor
 public final class AttributeOf<T> implements ModelAttribute<T> {
 
-    private final AttributeName<T> name;
-    private final Model model;
+    @NonNull private final Scalar<ModelAttribute<T>> attribute;
 
+    @SuppressWarnings("unchecked")
     public AttributeOf(final AttributeName<T> name, final Model model) {
-        this.name = name;
-        this.model = model;
+        this(
+            new Sticky<>(
+                new Mapped<>(
+                    attr -> (ModelAttribute<T>) attr,
+                    new FirstOf<>(
+                        attribute -> attribute.name().equals(name),
+                        model,
+                        () -> {
+                            throw new NoSuchElementException(
+                                "No model attribute exists for the supplied name"
+                            );
+                        }
+                    )
+                )
+            )
+        );
     }
 
     @Override
     public AttributeName<T> name() {
-        return this.name;
+        return new Unchecked<>(this.attribute).value().name();
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public T value() {
-        for (final ModelAttribute<?> attribute : this.model) {
-            if (attribute.name().equals(this.name)) {
-                return ((ModelAttribute<T>) attribute).value();
-            }
-        }
-        throw new NoSuchElementException(
-            "No model attribute exists for the supplied name"
-        );
+        return new Unchecked<>(this.attribute).value().value();
     }
 }
