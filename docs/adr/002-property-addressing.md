@@ -1,4 +1,4 @@
-# ADR-002 — Keep Property Coordinates Opaque in Forma Core
+# ADR-002 — Keep Semantic Names Distinct from Representation Coordinates
 
 ## Status
 
@@ -8,83 +8,58 @@ Accepted
 
 Forma separates represented information from semantic interpretation.
 
-A `Data` object must be able to exist independently from any semantic `Metadata` or `Model` that may later interpret it. At the same time, `Metadata` must be able to bind a semantic `Attribute<T>` to the correct `Property` without assuming that a semantic attribute identity is equal to a textual source name.
+A `Data` object must be able to represent information without knowing which semantic `Metadata` may later interpret it. Conversely, semantic `Attribute<T>` objects must be able to describe meaning without knowing whether a concrete representation addresses information through JSON fields, JDBC columns, object members, positions, paths, or another coordinate system.
 
-A semantic coordinate may correspond to very different representation coordinates depending on the source:
+The same semantic attribute may therefore be associated with different representation coordinates:
 
 ```text
-Student.email -> JSON field "e_mail_address"
-Student.email -> JDBC column "EMAIL_ADDR"
-Student.email -> POJO member "emailAddress"
-Student.email -> positional value 7
-Student.email -> nested path ["contact", "email"]
+email -> JSON field "e_mail_address"
+email -> JDBC column "EMAIL_ADDR"
+email -> POJO member "emailAddress"
+email -> positional value 7
+email -> nested path ["contact", "email"]
 ```
 
-The core model therefore needs a representation-neutral addressing boundary.
-
-ADR-001 originally introduced both `PropertyReference` and the possible specialization `PropertyName`. Further experimentation showed that the specialization is unnecessary in the core model and risks privileging named representations.
+Forma needs both a semantic name and a representation coordinate, but those concepts must remain distinct.
 
 ## Decision
 
-Forma core uses a single opaque coordinate abstraction:
+### AttributeName is a typed semantic value object
+
+An attribute has a textual semantic name inside a `Metadata`.
+
+```java
+public interface AttributeName<T> extends Text {
+}
+```
+
+The generic parameter expresses the semantic value type associated with that name at the API boundary.
+
+A concrete attribute name is a value object. Equal textual names represent the same attribute name within a metadata definition. The name is validated when constructed so invalid textual states are not representable.
+
+For example:
+
+```java
+AttributeName<String> NAME = new AttributeNameOf<>("name");
+AttributeName<Integer> AGE = new AttributeNameOf<>("age");
+```
+
+`AttributeName` is not globally scoped application identity. Its semantic context is the `Metadata` that contains the corresponding attribute.
+
+> **An AttributeName identifies an attribute within Metadata, not globally across the application.**
+
+### PropertyReference is an opaque representation coordinate
+
+Representation addressing uses a separate abstraction:
 
 ```java
 public interface PropertyReference {
 }
 ```
 
-`Data` resolves properties only through representation coordinates:
+Forma core deliberately does not prescribe the shape of a property reference.
 
-```java
-public interface Data extends Iterable<Property> {
-
-    Property property(PropertyReference reference);
-}
-```
-
-Semantic identities remain distinct:
-
-```java
-public interface AttributeName<T> {
-}
-```
-
-The association between the two coordinate systems belongs to the binding relationship and is represented by `PropertyMapping`:
-
-```java
-public interface PropertyMapping {
-
-    PropertyReference property(AttributeName<?> attribute);
-}
-```
-
-Binding therefore follows this path:
-
-```text
-AttributeName
-     |
-     v
-PropertyMapping
-     |
-     v
-PropertyReference
-     |
-     v
-    Data
-     |
-     v
-  Property
-```
-
-The mapping belongs neither to `Data` nor to `Attribute` as intrinsic state. It is contextual information supplied when semantic metadata is bound to a concrete representation.
-
-> **Data knows representation. Metadata knows semantics. PropertyMapping relates their coordinates.**
-
-### PropertyReference is deliberately opaque
-
-Forma core does not classify representation coordinates as names, positions, paths, columns, members, or any other concrete shape.
-
-Representation-specific code may define whichever coordinates naturally describe its source:
+Concrete representations may define coordinates such as:
 
 ```java
 record JsonField(String name) implements PropertyReference {}
@@ -93,82 +68,130 @@ record Position(int index) implements PropertyReference {}
 record PropertyPath(List<String> segments) implements PropertyReference {}
 ```
 
-These examples are representation concepts, not Forma core concepts.
+These are representation concepts rather than semantic attribute names.
 
 > **Forma core knows that data has coordinates, not what shape those coordinates have.**
 
-### PropertyName is removed from core
+### Property carries its representation coordinate
 
-`PropertyName` does not establish an invariant or behavior beyond `PropertyReference`. Its presence in core would classify one particular coordinate shape without providing value to the binding contract.
-
-A named coordinate has no privileged status over a positional or hierarchical coordinate.
-
-Therefore Forma core does not define:
+A property is an addressable portion of represented data:
 
 ```java
-interface PropertyName extends PropertyReference {
+public interface Property {
+
+    PropertyReference reference();
+
+    PropertyValue value();
 }
 ```
 
-A representation-specific module remains free to introduce a named coordinate object if that representation benefits from one.
+`Data` therefore only needs to expose its represented properties:
 
-### The same objects may participate in different bindings
+```java
+public interface Data extends Iterable<Property> {
+}
+```
 
-Because mapping belongs to the binding relationship, the same `Metadata` may bind differently represented `Data` by using different `PropertyMapping` objects.
+Generic lookup is derived from these contracts rather than being prescribed as a fundamental `Data` operation. `PropertyAt` represents a property located at a particular coordinate inside `Data`:
 
-Likewise, the same `Data` may participate in different semantic bindings without acquiring knowledge of those semantic models.
+```java
+new PropertyAt(reference, data)
+```
 
-This is intentional. Neither side owns the relationship by itself.
+This keeps lookup compositional while allowing specialized representations to optimize their own access patterns when needed.
 
-## Evidence from the spike
+### PropertyMapping relates semantic names to representation coordinates
 
-The contract tests exercise the same core API with multiple coordinate shapes:
+The association between semantic names and representation coordinates belongs to the binding relationship:
 
-* a named reference whose text does not equal the semantic attribute identity;
-* a positional reference;
-* a nested path reference;
-* different mappings applied to the same represented data.
+```java
+public interface PropertyMapping {
 
-No change to the `Data`, `Metadata`, `Attribute`, or `PropertyMapping` contracts is required to support those cases.
+    PropertyReference property(AttributeName<?> attribute);
+}
+```
 
-The experiment therefore demonstrates that `PropertyReference` is sufficient as the core addressing abstraction and that more specific coordinate types can remain representation-local.
+Model construction therefore follows this path:
+
+```text
+Metadata
+   |
+   v
+AttributeName
+   |
+   v
+PropertyMapping
+   |
+   v
+PropertyReference
+   |
+   v
+PropertyAt(reference, Data)
+   |
+   v
+Attribute.from(Property)
+   |
+   v
+ModelAttribute
+```
+
+Neither `Data` nor `Attribute` owns this relationship by itself.
+
+> **Data knows representation. Metadata knows semantics. PropertyMapping relates their coordinates.**
+
+### Same-name mapping is a convention, not a coordinate type
+
+Many representations use property names that naturally match semantic attribute names. Forma supports this as a mapping convention without introducing a universal textual `PropertyReference`.
+
+```java
+new SameNameMapping(JsonField::new)
+new SameNameMapping(JdbcColumn::new)
+```
+
+The semantic name supplies the text while the representation-specific function creates the appropriate coordinate object.
+
+This distinction is intentional:
+
+> **Same name is a mapping convention, not a universal representation coordinate.**
+
+A positional or hierarchical representation can use a completely different `PropertyMapping` without changing `Attribute`, `Metadata`, `Data`, or `Model`.
 
 ## Consequences
 
-Forma core does not depend on JSON fields, JDBC columns, POJO members, paths, positions, or naming conventions.
+Semantic attributes have simple, typed, textual names with value semantics.
 
-Semantic attributes remain independent from physical representation layouts.
+A semantic name remains distinct from a physical representation coordinate even when both happen to contain the same text.
 
-Named, positional, hierarchical, column-oriented, and future coordinate systems can participate in the same binding model.
+Different metadata definitions may independently use the same attribute names because names are interpreted within their metadata context rather than as global identifiers.
 
-The binding caller must provide a `PropertyMapping`. This is deliberate because the association between semantics and representation is contextual information rather than intrinsic state of either side.
+Representation-specific coordinate systems remain outside the Forma core vocabulary.
 
-Convention-based mappings such as same-name or camelCase-to-snake_case remain possible, but those conventions must produce representation-specific `PropertyReference` objects rather than becoming assumptions of the core model.
+The same `Metadata` may be associated with differently represented `Data` through different `PropertyMapping` objects, and the same `Data` may participate in different semantic bindings.
+
+Convention-based mappings remain concise while explicit mappings continue to support renamed, positional, hierarchical, and otherwise heterogeneous representations.
 
 ## Alternatives considered
 
-### Data accepts AttributeName directly
+### Use String directly for semantic attribute names
 
-Rejected because arbitrary represented data would become coupled to semantic identities belonging to models it may never participate in.
+Rejected because an attribute name has semantic type and construction invariants that a raw `String` cannot express. `AttributeName<T>` makes the distinction explicit and prevents invalid names from entering the semantic model.
 
-### Attribute owns a PropertyReference
+### Treat AttributeName as global semantic identity
 
-Rejected because semantic attributes would become coupled to physical representation layouts.
+Rejected because metadata already provides the semantic context. Requiring globally unique or instance-identity names would add complexity without improving the binding model.
 
-### Metadata permanently owns the mapping
+### Let Data accept AttributeName directly
 
-Rejected as the fundamental model because the same metadata may be applied to differently represented data. Mapping belongs to a particular binding relationship.
+Rejected because arbitrary represented data would become coupled to semantic models it may never participate in.
 
-### PropertyName in core
+### Let Attribute own a PropertyReference
 
-Rejected because a textual name is only one possible coordinate shape and adds no core invariant beyond `PropertyReference`.
+Rejected because semantic attributes would become coupled to one physical representation layout.
 
-### A hierarchy for every coordinate kind
+### Define a textual PropertyReference in core
 
-Rejected because the core does not need to enumerate or understand coordinate shapes in order to perform binding.
+Rejected because textual naming is only one possible representation coordinate shape. Named coordinates have no privileged status over positions, paths, columns, members, or future coordinate systems.
 
-## Relationship with ADR-001
+### Let Metadata permanently own PropertyMapping
 
-This ADR preserves the representation/semantics separation established by ADR-001 and refines its property-addressing decision.
-
-Where ADR-001 presents `PropertyName` as a possible core specialization of `PropertyReference`, this ADR supersedes that part of the earlier decision: Forma core retains only the opaque `PropertyReference` abstraction.
+Rejected as the fundamental model because the same metadata may be associated with differently represented data. Mapping belongs to a particular binding relationship.
