@@ -13,7 +13,7 @@ final class PrimitiveAttributeContractTest {
 
     @Test
     void bindsTextWithoutKnowingItsRepresentation() {
-        final AttributeName<String> name = new Name<>();
+        final AttributeName<String> name = new AttributeNameOf<>("name");
         final Attribute<String> attribute = new StringAttribute(name);
         final ModelAttribute<String> bound = attribute.from(
             new ValueProperty(new Reference(), new TextValue(new TextOf("Ada")))
@@ -24,7 +24,7 @@ final class PrimitiveAttributeContractTest {
 
     @Test
     void composesSemanticConstraintAroundPrimitiveAttribute() {
-        final AttributeName<String> name = new Name<>();
+        final AttributeName<String> name = new AttributeNameOf<>("name");
         final Attribute<String> attribute = new NonBlankAttribute(
             new StringAttribute(name)
         );
@@ -38,7 +38,7 @@ final class PrimitiveAttributeContractTest {
     @Test
     void rejectsValueThroughSemanticConstraint() {
         final Attribute<String> attribute = new NonBlankAttribute(
-            new StringAttribute(new Name<>())
+            new StringAttribute(new AttributeNameOf<>("name"))
         );
         assertThrows(
             IllegalArgumentException.class,
@@ -50,7 +50,7 @@ final class PrimitiveAttributeContractTest {
 
     @Test
     void bindsIntegerFromNumericRepresentation() {
-        final AttributeName<Integer> name = new Name<>();
+        final AttributeName<Integer> name = new AttributeNameOf<>("age");
         final Attribute<Integer> attribute = new IntegerAttribute(name);
         final ModelAttribute<Integer> bound = attribute.from(
             new ValueProperty(new Reference(), new NumberValue(42))
@@ -61,7 +61,7 @@ final class PrimitiveAttributeContractTest {
 
     @Test
     void bindsIntegerFromConvertibleTextRepresentation() {
-        final AttributeName<Integer> name = new Name<>();
+        final AttributeName<Integer> name = new AttributeNameOf<>("age");
         final Attribute<Integer> attribute = new IntegerAttribute(name);
         final ModelAttribute<Integer> bound = attribute.from(
             new ValueProperty(new Reference(), new TextValue(new TextOf("42")))
@@ -71,7 +71,7 @@ final class PrimitiveAttributeContractTest {
 
     @Test
     void composesNumericConstraintAroundPrimitiveAttribute() {
-        final AttributeName<Integer> name = new Name<>();
+        final AttributeName<Integer> name = new AttributeNameOf<>("age");
         final Attribute<Integer> attribute = new PositiveAttribute<>(
             new IntegerAttribute(name)
         );
@@ -85,7 +85,7 @@ final class PrimitiveAttributeContractTest {
     @Test
     void rejectsZeroThroughNumericConstraint() {
         final Attribute<Integer> attribute = new PositiveAttribute<>(
-            new IntegerAttribute(new Name<>())
+            new IntegerAttribute(new AttributeNameOf<>("age"))
         );
         assertThrows(
             IllegalArgumentException.class,
@@ -98,7 +98,7 @@ final class PrimitiveAttributeContractTest {
     @Test
     void rejectsNegativeValueThroughNumericConstraint() {
         final Attribute<Integer> attribute = new PositiveAttribute<>(
-            new IntegerAttribute(new Name<>())
+            new IntegerAttribute(new AttributeNameOf<>("age"))
         );
         assertThrows(
             IllegalArgumentException.class,
@@ -110,7 +110,9 @@ final class PrimitiveAttributeContractTest {
 
     @Test
     void rejectsNonIntegralNumberAsIntegerSemantics() {
-        final Attribute<Integer> attribute = new IntegerAttribute(new Name<>());
+        final Attribute<Integer> attribute = new IntegerAttribute(
+            new AttributeNameOf<>("age")
+        );
         assertThrows(
             IllegalArgumentException.class,
             () -> attribute.from(
@@ -121,7 +123,9 @@ final class PrimitiveAttributeContractTest {
 
     @Test
     void rejectsIntegerOutsideJavaRange() {
-        final Attribute<Integer> attribute = new IntegerAttribute(new Name<>());
+        final Attribute<Integer> attribute = new IntegerAttribute(
+            new AttributeNameOf<>("age")
+        );
         assertThrows(
             IllegalArgumentException.class,
             () -> attribute.from(
@@ -135,7 +139,9 @@ final class PrimitiveAttributeContractTest {
 
     @Test
     void rejectsTextThatCannotBeInterpretedAsInteger() {
-        final Attribute<Integer> attribute = new IntegerAttribute(new Name<>());
+        final Attribute<Integer> attribute = new IntegerAttribute(
+            new AttributeNameOf<>("age")
+        );
         assertThrows(
             IllegalArgumentException.class,
             () -> attribute.from(
@@ -145,9 +151,6 @@ final class PrimitiveAttributeContractTest {
                 )
             )
         );
-    }
-
-    private record Name<T>() implements AttributeName<T> {
     }
 
     private record Reference() implements PropertyReference {
