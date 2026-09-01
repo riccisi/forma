@@ -2,7 +2,6 @@ package it.riccisi.forma;
 
 import lombok.NonNull;
 import org.cactoos.Text;
-import org.cactoos.text.TextOf;
 
 /**
  * Valid textual attribute name with value semantics.
