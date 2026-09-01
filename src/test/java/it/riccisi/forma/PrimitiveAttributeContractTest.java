@@ -113,29 +113,4 @@ final class PrimitiveAttributeContractTest {
 
     private record Reference() implements PropertyReference {
     }
-
-    private static final class NonBlankAttribute implements Attribute<String> {
-
-        private final Attribute<String> origin;
-
-        private NonBlankAttribute(final Attribute<String> origin) {
-            this.origin = origin;
-        }
-
-        @Override
-        public AttributeName<String> name() {
-            return this.origin.name();
-        }
-
-        @Override
-        public ModelAttribute<String> bind(final Property property) {
-            final ModelAttribute<String> bound = this.origin.bind(property);
-            if (bound.value().isBlank()) {
-                throw new IllegalArgumentException(
-                    "The semantic string cannot be blank"
-                );
-            }
-            return bound;
-        }
-    }
 }
