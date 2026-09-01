@@ -4,12 +4,16 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Successfully bound semantic attribute value.
+ * Internal immutable result of a successful semantic binding.
+ *
+ * <p>This object is deliberately not part of the public construction API.
+ * Attributes own interpretation and validation; this type only preserves the
+ * already-established semantic result inside a {@link Model}.
  *
  * @param <T> semantic value type
  */
 @RequiredArgsConstructor
-public final class BoundAttribute<T> implements ModelAttribute<T> {
+final class BoundAttribute<T> implements ModelAttribute<T> {
 
     @NonNull private final AttributeName<T> name;
     @NonNull private final T value;
