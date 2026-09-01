@@ -53,7 +53,9 @@ final class ModelContractTest {
         final Data data = new NamedData(
             Map.of(field, new JsonStringProperty(field, "alice@example.com"))
         );
-        final PropertyMapping mapping = new ExplicitMapping(Map.of(name, field));
+        final PropertyMapping mapping = new ExplicitMapping(
+            Map.of(new AttributeNameOf<Email>("email"), field)
+        );
 
         final Model model = new ModelOf(metadata, data, mapping);
 
@@ -61,7 +63,10 @@ final class ModelContractTest {
         assertSame(data, model.data());
         assertEquals(
             "alice@example.com",
-            new AttributeOf<>(name, model).value().toString()
+            new AttributeOf<Email>(
+                new AttributeNameOf<>("email"),
+                model
+            ).value().toString()
         );
         assertSame(name, model.iterator().next().name());
     }
