@@ -13,7 +13,7 @@ import org.cactoos.Text;
 public abstract class TextAttribute<T> implements Attribute<T> {
 
     @Override
-    public final ModelAttribute<T> bind(final Property property) {
+    public final ModelAttribute<T> from(final Property property) {
         return this.bind(property.value().asText());
     }
 

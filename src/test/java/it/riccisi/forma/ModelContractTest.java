@@ -20,17 +20,17 @@ final class ModelContractTest {
 
         assertEquals(
             "alice@example.com",
-            email.bind(new JsonStringProperty(reference, "alice@example.com"))
+            email.from(new JsonStringProperty(reference, "alice@example.com"))
                 .value().toString()
         );
         assertEquals(
             "bob@example.com",
-            email.bind(new MapStringProperty(reference, "bob@example.com"))
+            email.from(new MapStringProperty(reference, "bob@example.com"))
                 .value().toString()
         );
         assertEquals(
             "carol@example.com",
-            email.bind(new PojoStringProperty(reference, "carol@example.com"))
+            email.from(new PojoStringProperty(reference, "carol@example.com"))
                 .value().toString()
         );
     }

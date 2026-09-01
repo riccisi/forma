@@ -15,7 +15,7 @@ final class PrimitiveAttributeContractTest {
     void bindsTextWithoutKnowingItsRepresentation() {
         final AttributeName<String> name = new Name<>();
         final Attribute<String> attribute = new StringAttribute(name);
-        final ModelAttribute<String> bound = attribute.bind(
+        final ModelAttribute<String> bound = attribute.from(
             new ValueProperty(new Reference(), new TextValue(new TextOf("Ada")))
         );
         assertEquals(name, bound.name());
@@ -28,7 +28,7 @@ final class PrimitiveAttributeContractTest {
         final Attribute<String> attribute = new NonBlankAttribute(
             new StringAttribute(name)
         );
-        final ModelAttribute<String> bound = attribute.bind(
+        final ModelAttribute<String> bound = attribute.from(
             new ValueProperty(new Reference(), new TextValue(new TextOf("Ada")))
         );
         assertEquals(name, bound.name());
@@ -42,7 +42,7 @@ final class PrimitiveAttributeContractTest {
         );
         assertThrows(
             IllegalArgumentException.class,
-            () -> attribute.bind(
+            () -> attribute.from(
                 new ValueProperty(new Reference(), new TextValue(new TextOf("   ")))
             )
         );
@@ -52,7 +52,7 @@ final class PrimitiveAttributeContractTest {
     void bindsIntegerFromNumericRepresentation() {
         final AttributeName<Integer> name = new Name<>();
         final Attribute<Integer> attribute = new IntegerAttribute(name);
-        final ModelAttribute<Integer> bound = attribute.bind(
+        final ModelAttribute<Integer> bound = attribute.from(
             new ValueProperty(new Reference(), new NumberValue(42))
         );
         assertEquals(name, bound.name());
@@ -63,7 +63,7 @@ final class PrimitiveAttributeContractTest {
     void bindsIntegerFromConvertibleTextRepresentation() {
         final AttributeName<Integer> name = new Name<>();
         final Attribute<Integer> attribute = new IntegerAttribute(name);
-        final ModelAttribute<Integer> bound = attribute.bind(
+        final ModelAttribute<Integer> bound = attribute.from(
             new ValueProperty(new Reference(), new TextValue(new TextOf("42")))
         );
         assertEquals(42, bound.value());
@@ -75,7 +75,7 @@ final class PrimitiveAttributeContractTest {
         final Attribute<Integer> attribute = new PositiveAttribute<>(
             new IntegerAttribute(name)
         );
-        final ModelAttribute<Integer> bound = attribute.bind(
+        final ModelAttribute<Integer> bound = attribute.from(
             new ValueProperty(new Reference(), new NumberValue(42))
         );
         assertEquals(name, bound.name());
@@ -89,7 +89,7 @@ final class PrimitiveAttributeContractTest {
         );
         assertThrows(
             IllegalArgumentException.class,
-            () -> attribute.bind(
+            () -> attribute.from(
                 new ValueProperty(new Reference(), new NumberValue(0))
             )
         );
@@ -102,7 +102,7 @@ final class PrimitiveAttributeContractTest {
         );
         assertThrows(
             IllegalArgumentException.class,
-            () -> attribute.bind(
+            () -> attribute.from(
                 new ValueProperty(new Reference(), new NumberValue(-1))
             )
         );
@@ -113,7 +113,7 @@ final class PrimitiveAttributeContractTest {
         final Attribute<Integer> attribute = new IntegerAttribute(new Name<>());
         assertThrows(
             IllegalArgumentException.class,
-            () -> attribute.bind(
+            () -> attribute.from(
                 new ValueProperty(new Reference(), new NumberValue(42.5))
             )
         );
@@ -124,7 +124,7 @@ final class PrimitiveAttributeContractTest {
         final Attribute<Integer> attribute = new IntegerAttribute(new Name<>());
         assertThrows(
             IllegalArgumentException.class,
-            () -> attribute.bind(
+            () -> attribute.from(
                 new ValueProperty(
                     new Reference(),
                     new TextValue(new TextOf("2147483648"))
@@ -138,7 +138,7 @@ final class PrimitiveAttributeContractTest {
         final Attribute<Integer> attribute = new IntegerAttribute(new Name<>());
         assertThrows(
             IllegalArgumentException.class,
-            () -> attribute.bind(
+            () -> attribute.from(
                 new ValueProperty(
                     new Reference(),
                     new TextValue(new TextOf("forty-two"))

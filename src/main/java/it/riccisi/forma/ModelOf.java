@@ -1,9 +1,11 @@
 package it.riccisi.forma;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import org.cactoos.iterable.Mapped;
+import org.cactoos.list.ListOf;
+
+import java.util.Iterator;
 
 /**
  * Model established by binding represented data to metadata.
@@ -11,27 +13,30 @@ import lombok.NonNull;
  * <p>Construction eagerly binds every semantic attribute. Consequently an
  * instance exists only after all metadata invariants have been satisfied.
  */
+@RequiredArgsConstructor
 public final class ModelOf implements Model {
 
-    private final Metadata metadata;
-    private final Data data;
-    private final List<ModelAttribute<?>> attributes;
+    @NonNull private final Metadata metadata;
+    @NonNull private final Data data;
+    @NonNull private final Iterable<ModelAttribute<?>> attributes;
 
     public ModelOf(
         @NonNull final Metadata metadata,
         @NonNull final Data data,
         @NonNull final PropertyMapping mapping
     ) {
-        this.metadata = metadata;
-        this.data = data;
-        this.attributes = new ArrayList<>();
-        for (final Attribute<?> attribute : metadata) {
-            this.attributes.add(
-                attribute.bind(
-                    new PropertyAt(mapping.property(attribute.name()), data)
+        this(
+            metadata,
+            data,
+            new ListOf<>(
+                new Mapped<ModelAttribute<?>>(
+                    attribute -> attribute.from(
+                        new PropertyAt(mapping.property(attribute.name()), data)
+                    ),
+                    metadata
                 )
-            );
-        }
+            )
+        );
     }
 
     @Override

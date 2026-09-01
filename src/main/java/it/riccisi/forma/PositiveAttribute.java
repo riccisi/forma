@@ -19,8 +19,8 @@ public final class PositiveAttribute<T extends Number> implements Attribute<T> {
     }
 
     @Override
-    public ModelAttribute<T> bind(final Property property) {
-        final ModelAttribute<T> bound = this.origin.bind(property);
+    public ModelAttribute<T> from(final Property property) {
+        final ModelAttribute<T> bound = this.origin.from(property);
         if (bound.value().doubleValue() <= 0.0d) {
             throw new IllegalArgumentException(
                 "The semantic number must be positive"
