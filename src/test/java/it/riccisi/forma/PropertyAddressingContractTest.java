@@ -21,7 +21,8 @@ final class PropertyAddressingContractTest {
             Map.of(field, new TextProperty(field, "alice@example.com"))
         );
 
-        final Model model = metadata.bind(
+        final Model model = new ModelOf(
+            metadata,
             data,
             new ExplicitMapping(Map.of(email, field))
         );
@@ -38,7 +39,8 @@ final class PropertyAddressingContractTest {
             Map.of(position, new TextProperty(position, "alice@example.com"))
         );
 
-        final Model model = metadata.bind(
+        final Model model = new ModelOf(
+            metadata,
             data,
             new ExplicitMapping(Map.of(email, position))
         );
@@ -55,7 +57,8 @@ final class PropertyAddressingContractTest {
             Map.of(path, new TextProperty(path, "alice@example.com"))
         );
 
-        final Model model = metadata.bind(
+        final Model model = new ModelOf(
+            metadata,
             data,
             new ExplicitMapping(Map.of(email, path))
         );
@@ -76,11 +79,13 @@ final class PropertyAddressingContractTest {
             )
         );
 
-        final Model firstModel = metadata.bind(
+        final Model firstModel = new ModelOf(
+            metadata,
             data,
             new ExplicitMapping(Map.of(email, first))
         );
-        final Model secondModel = metadata.bind(
+        final Model secondModel = new ModelOf(
+            metadata,
             data,
             new ExplicitMapping(Map.of(email, second))
         );
@@ -160,34 +165,8 @@ final class PropertyAddressingContractTest {
     private record SingleAttributeMetadata(Attribute<?> attribute) implements Metadata {
 
         @Override
-        public Model bind(final Data data, final PropertyMapping mapping) {
-            final ModelAttribute<?> bound = this.attribute.bind(
-                new PropertyAt(mapping.property(this.attribute.name()), data)
-            );
-            return new BoundModel(this, data, List.of(bound));
-        }
-
-        @Override
         public Iterator<Attribute<?>> iterator() {
             return List.<Attribute<?>>of(this.attribute).iterator();
-        }
-    }
-
-    private record BoundAttribute<T>(
-        AttributeName<T> name,
-        T value
-    ) implements ModelAttribute<T> {
-    }
-
-    private record BoundModel(
-        Metadata metadata,
-        Data data,
-        List<ModelAttribute<?>> attributes
-    ) implements Model {
-
-        @Override
-        public Iterator<ModelAttribute<?>> iterator() {
-            return this.attributes.iterator();
         }
     }
 }
