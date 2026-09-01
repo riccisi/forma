@@ -1,6 +1,5 @@
 package it.riccisi.forma;
 
-import org.cactoos.Text;
 import org.cactoos.text.TextOf;
 import org.junit.jupiter.api.Test;
 
@@ -21,6 +20,32 @@ final class PrimitiveAttributeContractTest {
         );
         assertEquals(name, bound.name());
         assertEquals("Ada", bound.value());
+    }
+
+    @Test
+    void composesSemanticConstraintAroundPrimitiveAttribute() {
+        final AttributeName<String> name = new Name<>();
+        final Attribute<String> attribute = new NonBlankAttribute(
+            new StringAttribute(name)
+        );
+        final ModelAttribute<String> bound = attribute.bind(
+            new ValueProperty(new Reference(), new TextValue(new TextOf("Ada")))
+        );
+        assertEquals(name, bound.name());
+        assertEquals("Ada", bound.value());
+    }
+
+    @Test
+    void rejectsValueThroughSemanticConstraint() {
+        final Attribute<String> attribute = new NonBlankAttribute(
+            new StringAttribute(new Name<>())
+        );
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> attribute.bind(
+                new ValueProperty(new Reference(), new TextValue(new TextOf("   ")))
+            )
+        );
     }
 
     @Test
@@ -89,22 +114,28 @@ final class PrimitiveAttributeContractTest {
     private record Reference() implements PropertyReference {
     }
 
-    private static final class StringAttribute extends TextAttribute<String> {
+    private static final class NonBlankAttribute implements Attribute<String> {
 
-        private final AttributeName<String> name;
+        private final Attribute<String> origin;
 
-        private StringAttribute(final AttributeName<String> name) {
-            this.name = name;
+        private NonBlankAttribute(final Attribute<String> origin) {
+            this.origin = origin;
         }
 
         @Override
         public AttributeName<String> name() {
-            return this.name;
+            return this.origin.name();
         }
 
         @Override
-        protected ModelAttribute<String> bind(final Text value) {
-            return new BoundAttribute<>(this.name, value.asString());
+        public ModelAttribute<String> bind(final Property property) {
+            final ModelAttribute<String> bound = this.origin.bind(property);
+            if (bound.value().isBlank()) {
+                throw new IllegalArgumentException(
+                    "The semantic string cannot be blank"
+                );
+            }
+            return bound;
         }
     }
 }
