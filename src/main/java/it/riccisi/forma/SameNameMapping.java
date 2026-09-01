@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.cactoos.Text;
 
 /**
- * Property mapping deriving representation coordinates from attribute text.
+ * Property mapping deriving representation coordinates from attribute names.
  *
  * <p>The supplied reference function remains representation-specific. This
  * mapping only establishes the convention that semantic and representation
@@ -19,6 +19,6 @@ public final class SameNameMapping implements PropertyMapping {
 
     @Override
     public PropertyReference property(final AttributeName<?> attribute) {
-        return this.reference.apply(attribute.text());
+        return this.reference.apply(attribute);
     }
 }
