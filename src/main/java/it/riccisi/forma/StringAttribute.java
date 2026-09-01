@@ -3,6 +3,7 @@ package it.riccisi.forma;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.cactoos.Text;
+import org.cactoos.text.UncheckedText;
 
 /**
  * Semantic string interpreted from a textual property value.
@@ -19,6 +20,6 @@ public final class StringAttribute extends TextAttribute<String> {
 
     @Override
     protected ModelAttribute<String> bind(final Text value) {
-        return new BoundAttribute<>(this.name, value.asString());
+        return new BoundAttribute<>(this.name, new UncheckedText(value).asString());
     }
 }
