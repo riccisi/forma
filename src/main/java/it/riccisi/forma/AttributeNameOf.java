@@ -1,29 +1,67 @@
 package it.riccisi.forma;
 
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import org.cactoos.Text;
 import org.cactoos.text.TextOf;
 
 /**
- * Attribute identity with a conventional textual name.
- *
- * <p>Identity remains object identity; equal text does not make two instances
- * the same semantic attribute.
+ * Valid textual attribute name with value semantics.
  *
  * @param <T> semantic value type
  */
-@RequiredArgsConstructor
 public final class AttributeNameOf<T> implements AttributeName<T> {
 
-    @NonNull private final Text text;
+    private final String value;
 
-    public AttributeNameOf(final String text) {
-        this(new TextOf(text));
+    public AttributeNameOf(final String value) {
+        this.value = AttributeNameOf.valid(value);
+    }
+
+    public AttributeNameOf(@NonNull final Text value) {
+        this(AttributeNameOf.string(value));
     }
 
     @Override
-    public Text text() {
-        return this.text;
+    public String asString() {
+        return this.value;
+    }
+
+    @Override
+    public boolean equals(final Object other) {
+        return this == other || other instanceof AttributeName<?>
+            && this.value.equals(AttributeNameOf.string((AttributeName<?>) other));
+    }
+
+    @Override
+    public int hashCode() {
+        return this.value.hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return this.value;
+    }
+
+    private static String valid(@NonNull final String value) {
+        if (value.isBlank()) {
+            throw new IllegalArgumentException("Attribute name cannot be blank");
+        }
+        if (!value.equals(value.strip())) {
+            throw new IllegalArgumentException(
+                "Attribute name cannot have surrounding whitespace"
+            );
+        }
+        return value;
+    }
+
+    private static String string(final Text text) {
+        try {
+            return text.asString();
+        } catch (final Exception err) {
+            throw new IllegalArgumentException(
+                "Attribute name text cannot be read",
+                err
+            );
+        }
     }
 }
