@@ -1,14 +1,16 @@
 package it.riccisi.forma;
 
+import org.cactoos.Text;
+
 /**
- * Typed identity of a semantic attribute.
+ * Typed semantic name of an attribute within metadata.
  *
- * <p>The generic parameter lets public APIs express the expected semantic value
- * type without casts at the call site. Runtime safety is established by
- * constructing a {@link Model} through {@link Metadata}, which must associate a
- * name only with a compatible {@link ModelAttribute}.
+ * <p>An attribute name is a value object rather than a representation
+ * coordinate. Its textual value identifies the attribute inside a semantic
+ * {@link Metadata}, while the generic parameter lets APIs express the expected
+ * semantic value type without casts at the call site.
  *
  * @param <T> semantic value type
  */
-public interface AttributeName<T> {
+public interface AttributeName<T> extends Text {
 }

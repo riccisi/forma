@@ -14,23 +14,23 @@ final class ModelContractTest {
 
     @Test
     void sameSemanticAttributeReadsHeterogeneousRepresentations() {
-        final AttributeName<Email> name = new EmailName();
+        final AttributeName<Email> name = new AttributeNameOf<>("email");
         final Attribute<Email> email = new EmailAttribute(name);
         final PropertyReference reference = new NamedReference("email");
 
         assertEquals(
             "alice@example.com",
-            email.bind(new JsonStringProperty(reference, "alice@example.com"))
+            email.from(new JsonStringProperty(reference, "alice@example.com"))
                 .value().toString()
         );
         assertEquals(
             "bob@example.com",
-            email.bind(new MapStringProperty(reference, "bob@example.com"))
+            email.from(new MapStringProperty(reference, "bob@example.com"))
                 .value().toString()
         );
         assertEquals(
             "carol@example.com",
-            email.bind(new PojoStringProperty(reference, "carol@example.com"))
+            email.from(new PojoStringProperty(reference, "carol@example.com"))
                 .value().toString()
         );
     }
@@ -46,27 +46,29 @@ final class ModelContractTest {
 
     @Test
     void mappingBelongsToBindingRelationship() {
-        final AttributeName<Email> name = new EmailName();
+        final AttributeName<Email> name = new AttributeNameOf<>("email");
         final PropertyReference field = new NamedReference("e_mail");
         final Attribute<Email> email = new EmailAttribute(name);
         final Metadata metadata = new SingleAttributeMetadata(email);
         final Data data = new NamedData(
             Map.of(field, new JsonStringProperty(field, "alice@example.com"))
         );
-        final PropertyMapping mapping = new ExplicitMapping(Map.of(name, field));
+        final PropertyMapping mapping = new ExplicitMapping(
+            Map.of(new AttributeNameOf<Email>("email"), field)
+        );
 
-        final Model model = metadata.bind(data, mapping);
+        final Model model = new ModelOf(metadata, data, mapping);
 
         assertSame(metadata, model.metadata());
         assertSame(data, model.data());
         assertEquals(
             "alice@example.com",
-            new AttributeOf<>(name, model).value().toString()
+            new AttributeOf<Email>(
+                new AttributeNameOf<>("email"),
+                model
+            ).value().toString()
         );
         assertSame(name, model.iterator().next().name());
-    }
-
-    private record EmailName() implements AttributeName<Email> {
     }
 
     private record NamedReference(String value) implements PropertyReference {
@@ -177,14 +179,6 @@ final class ModelContractTest {
     private record SingleAttributeMetadata(Attribute<?> attribute) implements Metadata {
 
         @Override
-        public Model bind(final Data data, final PropertyMapping mapping) {
-            final ModelAttribute<?> bound = this.attribute.bind(
-                new PropertyAt(mapping.property(this.attribute.name()), data)
-            );
-            return new BoundModel(this, data, List.of(bound));
-        }
-
-        @Override
         public Iterator<Attribute<?>> iterator() {
             return List.<Attribute<?>>of(this.attribute).iterator();
         }
@@ -194,17 +188,5 @@ final class ModelContractTest {
         AttributeName<T> name,
         T value
     ) implements ModelAttribute<T> {
-    }
-
-    private record BoundModel(
-        Metadata metadata,
-        Data data,
-        List<ModelAttribute<?>> attributes
-    ) implements Model {
-
-        @Override
-        public Iterator<ModelAttribute<?>> iterator() {
-            return this.attributes.iterator();
-        }
     }
 }

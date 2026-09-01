@@ -14,14 +14,15 @@ final class PropertyAddressingContractTest {
 
     @Test
     void namedRepresentationDoesNotAssumeSemanticNameEquality() {
-        final AttributeName<String> email = new SemanticName();
+        final AttributeName<String> email = new AttributeNameOf<>("email");
         final PropertyReference field = new NamedReference("e_mail_address");
         final Metadata metadata = new SingleAttributeMetadata(new StringAttribute(email));
         final Data data = new ReferencedData(
             Map.of(field, new TextProperty(field, "alice@example.com"))
         );
 
-        final Model model = metadata.bind(
+        final Model model = new ModelOf(
+            metadata,
             data,
             new ExplicitMapping(Map.of(email, field))
         );
@@ -30,15 +31,34 @@ final class PropertyAddressingContractTest {
     }
 
     @Test
+    void sameNameConventionDerivesRepresentationReference() {
+        final AttributeName<String> email = new AttributeNameOf<>("email");
+        final PropertyReference field = new NamedReference("email");
+        final Metadata metadata = new SingleAttributeMetadata(new StringAttribute(email));
+        final Data data = new ReferencedData(
+            Map.of(field, new TextProperty(field, "alice@example.com"))
+        );
+
+        final Model model = new ModelOf(
+            metadata,
+            data,
+            new SameNameMapping(text -> new NamedReference(string(text)))
+        );
+
+        assertEquals("alice@example.com", new AttributeOf<>(email, model).value());
+    }
+
+    @Test
     void positionalRepresentationUsesTheSameBindingProtocol() {
-        final AttributeName<String> email = new SemanticName();
+        final AttributeName<String> email = new AttributeNameOf<>("email");
         final PropertyReference position = new PositionalReference(7);
         final Metadata metadata = new SingleAttributeMetadata(new StringAttribute(email));
         final Data data = new ReferencedData(
             Map.of(position, new TextProperty(position, "alice@example.com"))
         );
 
-        final Model model = metadata.bind(
+        final Model model = new ModelOf(
+            metadata,
             data,
             new ExplicitMapping(Map.of(email, position))
         );
@@ -48,14 +68,15 @@ final class PropertyAddressingContractTest {
 
     @Test
     void nestedRepresentationUsesTheSameBindingProtocol() {
-        final AttributeName<String> email = new SemanticName();
+        final AttributeName<String> email = new AttributeNameOf<>("email");
         final PropertyReference path = new PathReference(List.of("contact", "email"));
         final Metadata metadata = new SingleAttributeMetadata(new StringAttribute(email));
         final Data data = new ReferencedData(
             Map.of(path, new TextProperty(path, "alice@example.com"))
         );
 
-        final Model model = metadata.bind(
+        final Model model = new ModelOf(
+            metadata,
             data,
             new ExplicitMapping(Map.of(email, path))
         );
@@ -65,7 +86,7 @@ final class PropertyAddressingContractTest {
 
     @Test
     void mappingBelongsToEachBindingRelationship() {
-        final AttributeName<String> email = new SemanticName();
+        final AttributeName<String> email = new AttributeNameOf<>("email");
         final PropertyReference first = new NamedReference("email");
         final PropertyReference second = new NamedReference("e_mail");
         final Metadata metadata = new SingleAttributeMetadata(new StringAttribute(email));
@@ -76,11 +97,13 @@ final class PropertyAddressingContractTest {
             )
         );
 
-        final Model firstModel = metadata.bind(
+        final Model firstModel = new ModelOf(
+            metadata,
             data,
             new ExplicitMapping(Map.of(email, first))
         );
-        final Model secondModel = metadata.bind(
+        final Model secondModel = new ModelOf(
+            metadata,
             data,
             new ExplicitMapping(Map.of(email, second))
         );
@@ -91,7 +114,12 @@ final class PropertyAddressingContractTest {
         assertEquals("second@example.com", new AttributeOf<>(email, secondModel).value());
     }
 
-    private record SemanticName() implements AttributeName<String> {
+    private static String string(final Text text) {
+        try {
+            return text.asString();
+        } catch (final Exception err) {
+            throw new IllegalArgumentException(err);
+        }
     }
 
     private record NamedReference(String value) implements PropertyReference {
@@ -160,34 +188,8 @@ final class PropertyAddressingContractTest {
     private record SingleAttributeMetadata(Attribute<?> attribute) implements Metadata {
 
         @Override
-        public Model bind(final Data data, final PropertyMapping mapping) {
-            final ModelAttribute<?> bound = this.attribute.bind(
-                new PropertyAt(mapping.property(this.attribute.name()), data)
-            );
-            return new BoundModel(this, data, List.of(bound));
-        }
-
-        @Override
         public Iterator<Attribute<?>> iterator() {
             return List.<Attribute<?>>of(this.attribute).iterator();
-        }
-    }
-
-    private record BoundAttribute<T>(
-        AttributeName<T> name,
-        T value
-    ) implements ModelAttribute<T> {
-    }
-
-    private record BoundModel(
-        Metadata metadata,
-        Data data,
-        List<ModelAttribute<?>> attributes
-    ) implements Model {
-
-        @Override
-        public Iterator<ModelAttribute<?>> iterator() {
-            return this.attributes.iterator();
         }
     }
 }

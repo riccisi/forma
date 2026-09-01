@@ -24,5 +24,5 @@ public interface Attribute<T> {
      * @param property represented property to interpret
      * @return successfully bound model attribute
      */
-    ModelAttribute<T> bind(Property property);
+    ModelAttribute<T> from(Property property);
 }

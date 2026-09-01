@@ -34,7 +34,7 @@ final class HashtableDataTest {
 
     @Test
     void participatesInThePropertyMappingProtocol() throws Exception {
-        final AttributeName<String> email = new SemanticName();
+        final AttributeName<String> email = new AttributeNameOf<>("email");
         final PropertyReference field = new NamedReference("e_mail_address");
         final Data data = new HashtableData(
             Map.of(field, new TextValue(new TextOf("alice@example.com")))
@@ -88,9 +88,6 @@ final class HashtableDataTest {
             NoSuchElementException.class,
             () -> new PropertyAt(new NamedReference("missing"), data).value()
         );
-    }
-
-    private record SemanticName() implements AttributeName<String> {
     }
 
     private record NamedReference(String value) implements PropertyReference {
