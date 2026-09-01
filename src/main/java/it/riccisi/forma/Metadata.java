@@ -1,24 +1,15 @@
 package it.riccisi.forma;
 
 /**
- * Semantic structure and invariants used to construct a model from data.
+ * Semantic structure and invariants of a model.
  *
- * <p>Metadata is not just a list of fields. It decides whether arbitrary
- * {@link Data} can acquire a specific semantic structure.
+ * <p>Metadata is not just a list of fields. Its attributes define the semantic
+ * structure that represented data must satisfy in order to constitute a valid
+ * {@link Model}.
  *
- * <p>Binding is construction. A {@link Model} returned by this contract is valid
- * according to this metadata and must not require a separate validation step
- * before use. A {@link PropertyMapping} supplied for the binding relates semantic
- * attribute names to the coordinates understood by the represented data.
+ * <p>Metadata describes semantics; it does not perform model construction.
+ * Binding belongs to the model that associates metadata, represented data and
+ * a {@link PropertyMapping}.
  */
 public interface Metadata extends Iterable<Attribute<?>> {
-
-    /**
-     * Constructs a valid semantic model from represented data.
-     *
-     * @param data represented information to bind
-     * @param mapping association between semantic names and data coordinates
-     * @return a valid model
-     */
-    Model bind(Data data, PropertyMapping mapping);
 }
