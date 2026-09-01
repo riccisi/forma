@@ -1,5 +1,12 @@
 package it.riccisi.forma;
 
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import org.cactoos.Scalar;
+import org.cactoos.scalar.FirstOf;
+import org.cactoos.scalar.Sticky;
+import org.cactoos.scalar.Unchecked;
+
 import java.util.NoSuchElementException;
 
 /**
@@ -8,30 +15,38 @@ import java.util.NoSuchElementException;
  * <p>The lookup itself is modeled as a property. Resolution is derived from the
  * iterable {@link Data} contract rather than being a responsibility of Data.
  */
+@RequiredArgsConstructor
 public final class PropertyAt implements Property {
 
-    private final PropertyReference reference;
-    private final Data data;
+    @NonNull private final Scalar<Property> property;
 
     public PropertyAt(final PropertyReference reference, final Data data) {
-        this.reference = reference;
-        this.data = data;
+        this(
+            new Sticky<>(
+                new FirstOf<>(
+                    prop -> prop.reference().equals(reference),
+                    data,
+                    () -> {
+                        throw new NoSuchElementException(
+                            "No property exists at the supplied reference"
+                        );
+                    }
+                )
+            )
+        );
     }
 
     @Override
     public PropertyReference reference() {
-        return this.reference;
+        return this.property().reference();
     }
 
     @Override
     public PropertyValue value() {
-        for (final Property property : this.data) {
-            if (property.reference().equals(this.reference)) {
-                return property.value();
-            }
-        }
-        throw new NoSuchElementException(
-            "No property exists at the supplied reference"
-        );
+        return this.property().value();
+    }
+
+    private Property property() {
+        return new Unchecked<>(this.property).value();
     }
 }

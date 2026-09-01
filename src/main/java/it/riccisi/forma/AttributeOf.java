@@ -42,11 +42,15 @@ public final class AttributeOf<T> implements ModelAttribute<T> {
 
     @Override
     public AttributeName<T> name() {
-        return new Unchecked<>(this.attribute).value().name();
+        return this.attribute().name();
     }
 
     @Override
     public T value() {
-        return new Unchecked<>(this.attribute).value().value();
+        return this.attribute().value();
+    }
+
+    private ModelAttribute<T> attribute() {
+        return new Unchecked<>(this.attribute).value();
     }
 }
