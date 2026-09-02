@@ -7,8 +7,6 @@ import org.cactoos.scalar.FirstOf;
 import org.cactoos.scalar.Sticky;
 import org.cactoos.scalar.Unchecked;
 
-import java.util.NoSuchElementException;
-
 /**
  * Property addressed by a representation coordinate inside data.
  *
@@ -27,9 +25,7 @@ public final class PropertyAt implements Property {
                     prop -> prop.reference().equals(reference),
                     data,
                     () -> {
-                        throw new NoSuchElementException(
-                            "No property exists at the supplied reference"
-                        );
+                        throw new MissingProperty();
                     }
                 )
             )
