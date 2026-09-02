@@ -25,10 +25,7 @@ public final class IntegerAttribute extends NumberAttribute<Integer> {
                 new BigDecimal(value.toString()).intValueExact()
             );
         } catch (final ArithmeticException | NumberFormatException err) {
-            throw new IllegalArgumentException(
-                "The represented number cannot be interpreted as an integer",
-                err
-            );
+            throw new UninterpretableValue(err);
         }
     }
 }
