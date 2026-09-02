@@ -1,12 +1,11 @@
 package it.riccisi.forma;
 
+import java.util.Iterator;
 import lombok.AccessLevel;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.cactoos.iterable.Mapped;
 import org.cactoos.list.ListOf;
-
-import java.util.Iterator;
 
 /**
  * Model established by binding represented data to metadata.
@@ -31,9 +30,21 @@ public final class ModelOf implements Model {
             data,
             new ListOf<>(
                 new Mapped<ModelAttribute<?>>(
-                    attribute -> attribute.from(
-                        new PropertyAt(mapping.property(attribute.name()), data)
-                    ),
+                    attribute -> {
+                        final PropertyReference reference =
+                            mapping.property(attribute.name());
+                        try {
+                            return attribute.from(
+                                new PropertyAt(reference, data)
+                            );
+                        } catch (final RuntimeException err) {
+                            throw new BindingFailure(
+                                attribute.name(),
+                                reference,
+                                err
+                            );
+                        }
+                    },
                     metadata
                 )
             )
