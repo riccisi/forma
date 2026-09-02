@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Map;
-import java.util.NoSuchElementException;
 import org.cactoos.text.TextOf;
 import org.junit.jupiter.api.Test;
 
@@ -30,7 +29,7 @@ final class BindingFailureContractTest {
 
         assertSame(name, failure.attribute());
         assertSame(reference, failure.property());
-        assertEquals(NoSuchElementException.class, failure.getCause().getClass());
+        assertEquals("missing", this.kind(failure.reason()));
     }
 
     @Test
@@ -54,7 +53,7 @@ final class BindingFailureContractTest {
 
         assertSame(age, failure.attribute());
         assertSame(reference, failure.property());
-        assertEquals(IllegalArgumentException.class, failure.getCause().getClass());
+        assertEquals("uninterpretable", this.kind(failure.reason()));
     }
 
     @Test
@@ -80,7 +79,28 @@ final class BindingFailureContractTest {
 
         assertSame(name, failure.attribute());
         assertSame(reference, failure.property());
-        assertEquals(IllegalArgumentException.class, failure.getCause().getClass());
+        assertEquals("rejected", this.kind(failure.reason()));
+    }
+
+    private String kind(final BindingReason reason) {
+        return reason.describe(
+            new BindingReasonSelection<>() {
+                @Override
+                public String missingProperty() {
+                    return "missing";
+                }
+
+                @Override
+                public String uninterpretableValue() {
+                    return "uninterpretable";
+                }
+
+                @Override
+                public String rejectedValue() {
+                    return "rejected";
+                }
+            }
+        );
     }
 
     private record NamedReference(String value) implements PropertyReference {
