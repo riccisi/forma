@@ -37,11 +37,11 @@ public final class ModelOf implements Model {
                             return attribute.from(
                                 new PropertyAt(reference, data)
                             );
-                        } catch (final RuntimeException err) {
+                        } catch (final BindingReason reason) {
                             throw new BindingFailure(
                                 attribute.name(),
                                 reference,
-                                err
+                                reason
                             );
                         }
                     },
