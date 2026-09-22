@@ -3,8 +3,6 @@ package it.riccisi.forma;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Iterator;
 import java.util.List;
@@ -19,25 +17,33 @@ import org.junit.jupiter.api.Test;
 final class MergedDataContractTest {
 
     @Test
-    void overlaysMatchingPropertiesAndPreservesTheOthers() {
-        final Property id = property("id", "42");
-        final Property oldmail = property("email", "old@example.com");
-        final Property description = property("description", "preserved");
-        final Property newmail = property("email", "new@example.com");
-        final Property status = property("status", "ACTIVE");
-
+    void exposesTheUnionOfBothRepresentations() {
         final Data merged = new MergedData(
-            new DataOf(id, oldmail, description),
-            new DataOf(newmail, status)
+            new DataOf(
+                property("id", "42"),
+                property("email", "old@example.com"),
+                property("description", "preserved")
+            ),
+            new DataOf(
+                property("email", "new@example.com"),
+                property("status", "ACTIVE")
+            )
         );
 
         final Iterator<Property> properties = merged.iterator();
-        assertSame(id, properties.next());
+        final Property id = properties.next();
         final Property email = properties.next();
+        final Property description = properties.next();
+        final Property status = properties.next();
+
+        assertInstanceOf(MergedProperty.class, id);
+        assertEquals("42", id.value().asText().asString());
         assertInstanceOf(MergedProperty.class, email);
         assertEquals("new@example.com", email.value().asText().asString());
-        assertSame(description, properties.next());
-        assertSame(status, properties.next());
+        assertInstanceOf(MergedProperty.class, description);
+        assertEquals("preserved", description.value().asText().asString());
+        assertInstanceOf(MergedProperty.class, status);
+        assertEquals("ACTIVE", status.value().asText().asString());
         assertFalse(properties.hasNext());
     }
 
@@ -60,14 +66,21 @@ final class MergedDataContractTest {
     }
 
     @Test
-    void rejectsPropertiesAtDifferentCoordinates() {
-        assertThrows(
-            IllegalArgumentException.class,
-            () -> new MergedProperty(
-                property("email", "old@example.com"),
-                property("status", "ACTIVE")
-            )
+    void fallsBackToBaseWhenOverlayDoesNotRepresentCoordinate() {
+        final AtomicBoolean base = new AtomicBoolean();
+        final Data merged = new MergedData(
+            new DataOf(observed("description", "preserved", base)),
+            new DataOf(property("status", "ACTIVE"))
         );
+
+        final Property description = merged.iterator().next();
+
+        assertFalse(base.get());
+        assertEquals(
+            "preserved",
+            description.value().asText().asString()
+        );
+        assertEquals(true, base.get());
     }
 
     private static Property property(final String name, final String value) {
