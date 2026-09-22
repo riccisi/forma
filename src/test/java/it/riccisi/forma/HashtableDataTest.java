@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.stream.StreamSupport;
 import org.cactoos.text.TextOf;
 import org.junit.jupiter.api.Test;
@@ -85,7 +84,7 @@ final class HashtableDataTest {
         final Data data = new HashtableData(Map.of());
 
         assertThrows(
-            NoSuchElementException.class,
+            MissingProperty.class,
             () -> new PropertyAt(new NamedReference("missing"), data).value()
         );
     }

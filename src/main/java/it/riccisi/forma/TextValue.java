@@ -22,10 +22,7 @@ public final class TextValue implements PropertyValue {
         try {
             return new BigDecimal(this.value.asString());
         } catch (final Exception err) {
-            throw new IllegalArgumentException(
-                "The represented text cannot be interpreted as a number",
-                err
-            );
+            throw new UninterpretableValue(err);
         }
     }
 }

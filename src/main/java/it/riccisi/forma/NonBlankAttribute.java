@@ -23,9 +23,7 @@ public final class NonBlankAttribute implements Attribute<String> {
     public ModelAttribute<String> from(final Property property) {
         final ModelAttribute<String> bound = this.origin.from(property);
         if (bound.value().isBlank()) {
-            throw new IllegalArgumentException(
-                "The semantic string cannot be blank"
-            );
+            throw new RejectedValue("The semantic string cannot be blank");
         }
         return bound;
     }

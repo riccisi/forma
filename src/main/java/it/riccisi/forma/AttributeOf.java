@@ -31,7 +31,10 @@ public final class AttributeOf<T> implements ModelAttribute<T> {
                         model,
                         () -> {
                             throw new NoSuchElementException(
-                                "No model attribute exists for the supplied name"
+                                String.format(
+                                    "No model attribute exists for the supplied name: %s",
+                                    name.asString()
+                                )
                             );
                         }
                     )
