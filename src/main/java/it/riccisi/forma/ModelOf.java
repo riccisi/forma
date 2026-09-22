@@ -31,8 +31,7 @@ public final class ModelOf implements Model {
             new ListOf<>(
                 new Mapped<ModelAttribute<?>>(
                     attribute -> {
-                        final PropertyReference reference =
-                            mapping.property(attribute.name());
+                        final PropertyReference reference = mapping.property(attribute.name());
                         try {
                             return attribute.from(
                                 new PropertyAt(reference, data)

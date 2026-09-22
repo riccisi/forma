@@ -1,5 +1,7 @@
 package it.riccisi.forma;
 
+import java.io.Serial;
+
 /**
  * Semantic reason why represented information could not establish a model
  * attribute.
@@ -10,7 +12,7 @@ package it.riccisi.forma;
  */
 public abstract class BindingReason extends IllegalArgumentException {
 
-    private static final long serialVersionUID = 1L;
+    @Serial private static final long serialVersionUID = 1L;
 
     protected BindingReason(final String message) {
         super(message);
