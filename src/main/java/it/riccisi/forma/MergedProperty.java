@@ -1,40 +1,40 @@
 package it.riccisi.forma;
 
-import java.util.Objects;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
 /**
- * Property resulting from overlaying one represented property over another.
+ * Property at one coordinate of two composed Data representations.
  *
- * <p>The two properties must identify the same representation coordinate.
- * Composition itself does not observe either value. The overlay value becomes
- * effective only when this property's value is observed.
+ * <p>The overlay has precedence when it represents this coordinate; otherwise
+ * the value is obtained from the base. Neither source value is observed until
+ * {@link #value()} is requested.
  */
+@RequiredArgsConstructor
 public final class MergedProperty implements Property {
 
-    private final Property base;
-    private final Property overlay;
+    @NonNull
+    private final PropertyReference reference;
 
-    public MergedProperty(
-        @NonNull final Property base,
-        @NonNull final Property overlay
-    ) {
-        if (!Objects.equals(base.reference(), overlay.reference())) {
-            throw new IllegalArgumentException(
-                "Cannot merge properties with different references"
-            );
-        }
-        this.base = base;
-        this.overlay = overlay;
-    }
+    @NonNull
+    private final Data base;
+
+    @NonNull
+    private final Data overlay;
 
     @Override
     public PropertyReference reference() {
-        return this.overlay.reference();
+        return this.reference;
     }
 
     @Override
     public PropertyValue value() {
-        return this.overlay.value();
+        Property property = new PropertyAt(this.reference, this.overlay);
+        try {
+            property.reference();
+        } catch (final MissingProperty missing) {
+            property = new PropertyAt(this.reference, this.base);
+        }
+        return property.value();
     }
 }
