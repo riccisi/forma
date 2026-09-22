@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.StreamSupport;
 import org.cactoos.Text;
 import org.cactoos.text.TextOf;
 import org.junit.jupiter.api.Test;
@@ -30,21 +31,11 @@ final class MergedDataContractTest {
             )
         );
 
-        final Iterator<Property> properties = merged.iterator();
-        final Property id = properties.next();
-        final Property email = properties.next();
-        final Property description = properties.next();
-        final Property status = properties.next();
-
-        assertInstanceOf(MergedProperty.class, id);
-        assertEquals("42", id.value().asText().asString());
-        assertInstanceOf(MergedProperty.class, email);
-        assertEquals("new@example.com", email.value().asText().asString());
-        assertInstanceOf(MergedProperty.class, description);
-        assertEquals("preserved", description.value().asText().asString());
-        assertInstanceOf(MergedProperty.class, status);
-        assertEquals("ACTIVE", status.value().asText().asString());
-        assertFalse(properties.hasNext());
+        assertEquals(4L, StreamSupport.stream(merged.spliterator(), false).count());
+        this.assertValue(merged, "id", "42");
+        this.assertValue(merged, "email", "new@example.com");
+        this.assertValue(merged, "description", "preserved");
+        this.assertValue(merged, "status", "ACTIVE");
     }
 
     @Test
@@ -68,19 +59,27 @@ final class MergedDataContractTest {
     @Test
     void fallsBackToBaseWhenOverlayDoesNotRepresentCoordinate() {
         final AtomicBoolean base = new AtomicBoolean();
+        final PropertyReference description = new NamedReference("description");
         final Data merged = new MergedData(
             new DataOf(observed("description", "preserved", base)),
             new DataOf(property("status", "ACTIVE"))
         );
 
-        final Property description = merged.iterator().next();
+        final Property property = new PropertyAt(description, merged);
 
         assertFalse(base.get());
-        assertEquals(
-            "preserved",
-            description.value().asText().asString()
-        );
+        assertEquals("preserved", property.value().asText().asString());
         assertEquals(true, base.get());
+    }
+
+    private void assertValue(
+        final Data data,
+        final String name,
+        final String expected
+    ) {
+        final Property property = new PropertyAt(new NamedReference(name), data);
+        assertInstanceOf(MergedProperty.class, property);
+        assertEquals(expected, property.value().asText().asString());
     }
 
     private static Property property(final String name, final String value) {
