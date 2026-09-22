@@ -34,14 +34,16 @@ public final class MergedData implements Data {
      */
     private static final class MergedIterator implements Iterator<Property> {
 
-        private final Iterator<Property> base;
-        private final Iterable<Property> overlay;
+        private final Data base;
+        private final Data overlay;
+        private final Iterator<Property> originals;
         private final Iterator<Property> additions;
         private Property next;
 
         private MergedIterator(final Data base, final Data overlay) {
-            this.base = base.iterator();
+            this.base = base;
             this.overlay = overlay;
+            this.originals = base.iterator();
             this.additions = overlay.iterator();
         }
 
@@ -64,8 +66,8 @@ public final class MergedData implements Data {
         }
 
         private Property find() {
-            if (this.base.hasNext()) {
-                final Property property = this.base.next();
+            if (this.originals.hasNext()) {
+                final Property property = this.originals.next();
                 final Property replacement = this.at(property.reference());
                 if (replacement == null) {
                     return property;
@@ -91,16 +93,12 @@ public final class MergedData implements Data {
         }
 
         private boolean contains(final PropertyReference reference) {
-            for (final Property property : this.baseIterable()) {
+            for (final Property property : this.base) {
                 if (property.reference().equals(reference)) {
                     return true;
                 }
             }
             return false;
-        }
-
-        private Iterable<Property> baseIterable() {
-            throw new UnsupportedOperationException();
         }
     }
 }
