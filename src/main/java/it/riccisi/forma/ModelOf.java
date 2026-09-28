@@ -3,7 +3,7 @@ package it.riccisi.forma;
 import java.util.Iterator;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import org.cactoos.iterable.Mapped;
+import org.cactoos.iterator.Mapped;
 
 /**
  * Semantic view of represented data through metadata.
@@ -31,17 +31,13 @@ public final class ModelOf implements Model {
 
     @Override
     public Iterator<ModelAttribute<?>> iterator() {
-        return new Mapped<Attribute<?>, ModelAttribute<?>>(
-            attribute -> this.observation(attribute),
-            this.metadata
-        ).iterator();
-    }
-
-    private <T> ModelAttribute<T> observation(final Attribute<T> attribute) {
-        return new ObservedAttribute<>(
-            attribute,
-            this.mapping.property(attribute.name()),
-            this.data
+        return new Mapped<>(
+            attribute -> new ObservedAttribute<>(
+                attribute,
+                this.mapping.property(attribute.name()),
+                this.data
+            ),
+            this.metadata.iterator()
         );
     }
 }

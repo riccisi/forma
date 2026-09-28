@@ -27,9 +27,7 @@ final class ObservedAttribute<T> implements ModelAttribute<T> {
     @Override
     public T value() {
         try {
-            return this.attribute.from(
-                new PropertyAt(this.reference, this.data)
-            ).value();
+            return this.attribute.from(new PropertyAt(this.reference, this.data)).value();
         } catch (final BindingReason reason) {
             throw new BindingFailure(
                 this.attribute.name(),
