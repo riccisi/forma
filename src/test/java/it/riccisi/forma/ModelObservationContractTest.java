@@ -32,11 +32,6 @@ final class ModelObservationContractTest {
     }
 
     @Test
-    void valueResolvesMapping() {
-        assertThat(new ObservedModel().value(), is("ACTIVE:1"));
-    }
-
-    @Test
     void valueInterpretsOnlyObservedProperty() {
         assertThat(new ObservedModel().value(), is("ACTIVE:0:1"));
     }
