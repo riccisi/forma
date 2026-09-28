@@ -1,7 +1,7 @@
 package it.riccisi.forma.attribute;
 
 import it.riccisi.forma.AttributeName;
-import it.riccisi.forma.UninterpretableValue;
+import it.riccisi.forma.observation.UninterpretableValue;
 import java.math.BigDecimal;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
