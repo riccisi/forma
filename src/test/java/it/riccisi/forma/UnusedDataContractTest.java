@@ -7,12 +7,11 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
-
 import org.cactoos.Text;
 import org.cactoos.text.TextOf;
 import org.cactoos.text.UncheckedText;
 import org.junit.jupiter.api.Test;
+import java.util.stream.StreamSupport;
 
 /**
  * Contract proving that model construction interprets only information required
@@ -52,7 +51,7 @@ final class UnusedDataContractTest {
 
         assertFalse(interpreted.get());
         assertSame(data, model.data());
-        assertEquals(2L, model.spliterator().getExactSizeIfKnown());
+        assertEquals(2L, StreamSupport.stream(model.spliterator(), false).count());
         assertEquals(
             "Preserved source data",
             new UncheckedText(new PropertyAt(description, model.data()).value().asText()).asString()
