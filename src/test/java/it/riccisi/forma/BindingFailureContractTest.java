@@ -1,5 +1,7 @@
 package it.riccisi.forma;
 
+import it.riccisi.forma.observation.ObservationReasonSelection;
+import it.riccisi.forma.observation.ObservationFailure;
 import it.riccisi.forma.attribute.AttributeNameOf;
 import it.riccisi.forma.attribute.IntegerAttribute;
 import it.riccisi.forma.attribute.NonBlankAttribute;
@@ -21,7 +23,7 @@ import org.junit.jupiter.api.Test;
 /**
  * Contract for failures occurring while observing semantic values.
  */
-final class BindingFailureContractTest {
+final class ObservationFailureContractTest {
 
     @Test
     void identifiesMissingRepresentedProperty() {
@@ -91,7 +93,7 @@ final class BindingFailureContractTest {
             try {
                 this.value();
                 return "none";
-            } catch (final BindingFailure failure) {
+            } catch (final ObservationFailure failure) {
                 return failure.reason().describe(new ReasonKind());
             }
         }
@@ -109,7 +111,7 @@ final class BindingFailureContractTest {
     }
 
     private static final class ReasonKind
-        implements BindingReasonSelection<String> {
+        implements ObservationReasonSelection<String> {
 
         @Override
         public String missingProperty() {
