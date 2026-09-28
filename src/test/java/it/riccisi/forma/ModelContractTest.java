@@ -9,6 +9,10 @@ import java.util.Map;
 
 import it.riccisi.forma.attribute.AttributeNameOf;
 import it.riccisi.forma.attribute.TextAttribute;
+import it.riccisi.forma.data.DataOf;
+import it.riccisi.forma.mapping.ExplicitMapping;
+import it.riccisi.forma.metadata.MetadataOf;
+import it.riccisi.forma.property.NamedReference;
 import it.riccisi.forma.model.AttributeOf;
 import it.riccisi.forma.model.ModelOf;
 import it.riccisi.forma.property.NumberValue;
@@ -56,10 +60,8 @@ final class ModelContractTest {
         final AttributeName<Email> name = new AttributeNameOf<>("email");
         final PropertyReference field = new NamedReference("e_mail");
         final Attribute<Email> email = new EmailAttribute(name);
-        final Metadata metadata = new SingleAttributeMetadata(email);
-        final Data data = new NamedData(
-            Map.of(field, new JsonStringProperty(field, "alice@example.com"))
-        );
+        final Metadata metadata = new MetadataOf(email);
+        final Data data = new DataOf(new JsonStringProperty(field, "alice@example.com"));
         final PropertyMapping mapping = new ExplicitMapping(
             Map.of(new AttributeNameOf<Email>("email"), field)
         );
@@ -76,9 +78,6 @@ final class ModelContractTest {
             ).value().toString()
         );
         assertSame(name, model.iterator().next().name());
-    }
-
-    private record NamedReference(String value) implements PropertyReference {
     }
 
     private record Email(Text text) {
@@ -163,37 +162,4 @@ final class ModelContractTest {
         }
     }
 
-    private record NamedData(
-        Map<PropertyReference, Property> properties
-    ) implements Data {
-
-        @Override
-        public Iterator<Property> iterator() {
-            return this.properties.values().iterator();
-        }
-    }
-
-    private record ExplicitMapping(
-        Map<AttributeName<?>, PropertyReference> references
-    ) implements PropertyMapping {
-
-        @Override
-        public PropertyReference property(final AttributeName<?> attribute) {
-            return this.references.get(attribute);
-        }
-    }
-
-    private record SingleAttributeMetadata(Attribute<?> attribute) implements Metadata {
-
-        @Override
-        public Iterator<Attribute<?>> iterator() {
-            return List.<Attribute<?>>of(this.attribute).iterator();
-        }
-    }
-
-    private record BoundModelAttribute<T>(
-        AttributeName<T> name,
-        T value
-    ) implements ModelAttribute<T> {
-    }
 }
