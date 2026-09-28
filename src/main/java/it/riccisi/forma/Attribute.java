@@ -1,11 +1,11 @@
 package it.riccisi.forma;
 
 /**
- * A semantic coordinate that can bind a represented property into a valid value.
+ * A semantic coordinate that interprets represented properties as values.
  *
  * <p>An attribute defines semantic meaning and interpretation only. It does not
  * know how its semantic identity is mapped to the coordinate of a concrete data
- * representation; that association is supplied at metadata binding time.
+ * representation.
  *
  * @param <T> semantic value type
  */
@@ -19,10 +19,10 @@ public interface Attribute<T> {
     AttributeName<T> name();
 
     /**
-     * Binds a represented property to this attribute.
+     * Interprets a represented property as this attribute's semantic value.
      *
      * @param property represented property to interpret
-     * @return successfully bound model attribute
+     * @return semantic value
      */
-    ModelAttribute<T> from(Property property);
+    T valueFrom(Property property);
 }
