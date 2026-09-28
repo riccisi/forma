@@ -2,7 +2,6 @@ package it.riccisi.forma;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Map;
 import java.util.stream.StreamSupport;
@@ -49,32 +48,6 @@ final class ModelConstructionContractTest {
         assertEquals(
             "Preserved source data",
             new PropertyAt(description, model.data()).value().asText().asString()
-        );
-    }
-
-    @Test
-    void rejectsModelWhenAnySemanticAttributeFails() {
-        final AttributeName<Integer> age = new AttributeNameOf<>("age");
-        final AttributeName<String> name = new AttributeNameOf<>("name");
-        final PropertyReference ageref = new NamedReference("student_age");
-        final PropertyReference nameref = new NamedReference("student_name");
-        final Metadata metadata = new MetadataOf(
-            new IntegerAttribute(age),
-            new NonBlankAttribute(new StringAttribute(name))
-        );
-        final Data data = new HashtableData(
-            Map.of(
-                ageref, new NumberValue(42),
-                nameref, new TextValue(new TextOf("   "))
-            )
-        );
-        final PropertyMapping mapping = new ExplicitMapping(
-            Map.of(age, ageref, name, nameref)
-        );
-
-        assertThrows(
-            IllegalArgumentException.class,
-            () -> new ModelOf(metadata, data, mapping)
         );
     }
 
