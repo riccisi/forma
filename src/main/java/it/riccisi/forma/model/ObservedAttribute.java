@@ -2,8 +2,8 @@ package it.riccisi.forma.model;
 
 import it.riccisi.forma.Attribute;
 import it.riccisi.forma.AttributeName;
-import it.riccisi.forma.BindingFailure;
-import it.riccisi.forma.BindingReason;
+import it.riccisi.forma.observation.ObservationFailure;
+import it.riccisi.forma.observation.ObservationReason;
 import it.riccisi.forma.Data;
 import it.riccisi.forma.ModelAttribute;
 import it.riccisi.forma.PropertyMapping;
@@ -40,8 +40,8 @@ final class ObservedAttribute<T> implements ModelAttribute<T> {
             this.mapping.property(this.attribute.name());
         try {
             return this.attribute.valueFrom(new PropertyAt(reference, this.data));
-        } catch (final BindingReason reason) {
-            throw new BindingFailure(
+        } catch (final ObservationReason reason) {
+            throw new ObservationFailure(
                 this.attribute.name(),
                 reference,
                 reason
