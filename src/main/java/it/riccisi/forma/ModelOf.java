@@ -34,7 +34,7 @@ public final class ModelOf implements Model {
         return new Mapped<>(
             attribute -> new ObservedAttribute<>(
                 attribute,
-                this.mapping.property(attribute.name()),
+                this.mapping,
                 this.data
             ),
             this.metadata.iterator()
