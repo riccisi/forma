@@ -1,5 +1,16 @@
 package it.riccisi.forma;
 
+import it.riccisi.forma.attribute.AttributeNameOf;
+import it.riccisi.forma.attribute.StringAttribute;
+import it.riccisi.forma.data.DataOf;
+import it.riccisi.forma.mapping.SameNameMapping;
+import it.riccisi.forma.metadata.MetadataOf;
+import it.riccisi.forma.model.ModelOf;
+import it.riccisi.forma.property.NamedReference;
+import it.riccisi.forma.property.PropertyAt;
+import it.riccisi.forma.property.TextValue;
+import it.riccisi.forma.property.ValueProperty;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -57,23 +68,6 @@ final class UnusedDataContractTest {
             new UncheckedText(new PropertyAt(description, model.data()).value().asText()).asString()
         );
         assertEquals(true, interpreted.get());
-    }
-
-    private record NamedReference(String value) implements PropertyReference {
-    }
-
-    private static final class DataOf implements Data {
-
-        private final Iterable<Property> properties;
-
-        private DataOf(final Property... properties) {
-            this.properties = List.of(properties);
-        }
-
-        @Override
-        public Iterator<Property> iterator() {
-            return this.properties.iterator();
-        }
     }
 
     private static final class ObservedValue implements PropertyValue {
