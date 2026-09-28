@@ -1,78 +1,111 @@
 package it.riccisi.forma;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-
-import java.util.Map;
-import java.util.stream.StreamSupport;
-
 import it.riccisi.forma.attribute.AttributeNameOf;
 import it.riccisi.forma.attribute.IntegerAttribute;
 import it.riccisi.forma.attribute.NonBlankAttribute;
 import it.riccisi.forma.attribute.StringAttribute;
 import it.riccisi.forma.data.HashtableData;
+import it.riccisi.forma.mapping.ExplicitMapping;
 import it.riccisi.forma.metadata.MetadataOf;
 import it.riccisi.forma.model.AttributeOf;
 import it.riccisi.forma.model.ModelOf;
+import it.riccisi.forma.property.NamedReference;
 import it.riccisi.forma.property.NumberValue;
 import it.riccisi.forma.property.PropertyAt;
 import it.riccisi.forma.property.TextValue;
+import java.util.Map;
+import java.util.stream.StreamSupport;
 import org.cactoos.text.TextOf;
+import org.cactoos.text.UncheckedText;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.sameInstance;
+
 /**
- * End-to-end contract for valid model construction.
+ * End-to-end contract for demand-driven model observation.
  */
 final class ModelConstructionContractTest {
 
     @Test
-    void constructsCompleteModelFromMetadataAndData() throws Exception {
-        final AttributeName<String> name = new AttributeNameOf<>("name");
-        final AttributeName<Integer> age = new AttributeNameOf<>("age");
-        final PropertyReference nameref = new NamedReference("student_name");
-        final PropertyReference ageref = new NamedReference("student_age");
-        final PropertyReference description = new NamedReference("description");
-        final Metadata metadata = new MetadataOf(
-            new NonBlankAttribute(new StringAttribute(name)),
-            new IntegerAttribute(age)
-        );
-        final Data data = new HashtableData(
-            Map.of(
+    void retainsMetadata() {
+        final Student student = new Student();
+        assertThat(student.model.metadata(), sameInstance(student.metadata));
+    }
+
+    @Test
+    void retainsData() {
+        final Student student = new Student();
+        assertThat(student.model.data(), sameInstance(student.data));
+    }
+
+    @Test
+    void observesTextualAttribute() {
+        assertThat(new Student().name(), equalTo("Ada"));
+    }
+
+    @Test
+    void observesNumericAttribute() {
+        assertThat(new Student().age(), equalTo(42));
+    }
+
+    @Test
+    void exposesAllMetadataAttributes() {
+        assertThat(new Student().attributeCount(), equalTo(2L));
+    }
+
+    @Test
+    void preservesUninterpretedSourceProperty() {
+        assertThat(new Student().description(), equalTo("Preserved source data"));
+    }
+
+    private static final class Student {
+
+        private final AttributeName<String> name;
+        private final AttributeName<Integer> age;
+        private final PropertyReference description;
+        private final Metadata metadata;
+        private final Data data;
+        private final Model model;
+
+        private Student() {
+            this.name = new AttributeNameOf<>("name");
+            this.age = new AttributeNameOf<>("age");
+            final PropertyReference nameref = new NamedReference("student_name");
+            final PropertyReference ageref = new NamedReference("student_age");
+            this.description = new NamedReference("description");
+            this.metadata = new MetadataOf(
+                new NonBlankAttribute(new StringAttribute(this.name)),
+                new IntegerAttribute(this.age)
+            );
+            this.data = new HashtableData(Map.of(
                 nameref, new TextValue(new TextOf("Ada")),
                 ageref, new NumberValue(42),
-                description, new TextValue(new TextOf("Preserved source data"))
-            )
-        );
-        final PropertyMapping mapping = new ExplicitMapping(
-            Map.of(name, nameref, age, ageref)
-        );
+                this.description, new TextValue(new TextOf("Preserved source data"))
+            ));
+            this.model = new ModelOf(
+                this.metadata, this.data,
+                new ExplicitMapping(Map.of(this.name, nameref, this.age, ageref))
+            );
+        }
 
-        final Model model = new ModelOf(metadata, data, mapping);
+        String name() {
+            return new AttributeOf<>(this.name, this.model).value();
+        }
 
-        assertSame(metadata, model.metadata());
-        assertSame(data, model.data());
-        assertEquals("Ada", new AttributeOf<>(name, model).value());
-        assertEquals(42, new AttributeOf<>(age, model).value());
-        assertEquals(
-            2L,
-            StreamSupport.stream(model.spliterator(), false).count()
-        );
-        assertEquals(
-            "Preserved source data",
-            new PropertyAt(description, model.data()).value().asText().asString()
-        );
-    }
+        Integer age() {
+            return new AttributeOf<>(this.age, this.model).value();
+        }
 
-    private record NamedReference(String value) implements PropertyReference {
-    }
+        long attributeCount() {
+            return StreamSupport.stream(this.model.spliterator(), false).count();
+        }
 
-    private record ExplicitMapping(
-        Map<AttributeName<?>, PropertyReference> references
-    ) implements PropertyMapping {
-
-        @Override
-        public PropertyReference property(final AttributeName<?> attribute) {
-            return this.references.get(attribute);
+        String description() {
+            return new UncheckedText(
+                new PropertyAt(this.description, this.model.data()).value().asText()
+            ).asString();
         }
     }
 }
