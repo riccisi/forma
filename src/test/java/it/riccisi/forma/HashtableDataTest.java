@@ -93,6 +93,40 @@ final class HashtableDataTest {
     }
 
     @Test
+    void preservesFirstUnconsumedPropertyValue() {
+        assertThat(
+            new UncheckedText(
+                new PropertyAt(
+                    new NamedReference("status"),
+                    new HashtableData(Map.of(
+                        new NamedReference("status"), new TextValue(new TextOf("ACTIVE")),
+                        new NamedReference("description"),
+                        new TextValue(new TextOf("Imported externally"))
+                    ))
+                ).value().asText()
+            ).asString(),
+            equalTo("ACTIVE")
+        );
+    }
+
+    @Test
+    void preservesSecondUnconsumedPropertyValue() {
+        assertThat(
+            new UncheckedText(
+                new PropertyAt(
+                    new NamedReference("description"),
+                    new HashtableData(Map.of(
+                        new NamedReference("status"), new TextValue(new TextOf("ACTIVE")),
+                        new NamedReference("description"),
+                        new TextValue(new TextOf("Imported externally"))
+                    ))
+                ).value().asText()
+            ).asString(),
+            equalTo("Imported externally")
+        );
+    }
+
+    @Test
     void propertyAtFailsWhenReferenceIsAbsent() {
         assertThrows(
             MissingProperty.class,
