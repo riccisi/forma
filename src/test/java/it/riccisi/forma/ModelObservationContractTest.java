@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.cactoos.Text;
 import org.cactoos.text.TextOf;
+import org.cactoos.text.UncheckedText;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -106,7 +107,7 @@ final class ModelObservationContractTest {
         @Override
         public PropertyReference property(final AttributeName<?> attribute) {
             this.calls.incrementAndGet();
-            return new NamedReference(attribute.asString());
+            return new NamedReference(new UncheckedText(attribute).asString());
         }
     }
 

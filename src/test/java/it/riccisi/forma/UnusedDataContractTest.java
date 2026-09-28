@@ -7,8 +7,11 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
+
 import org.cactoos.Text;
 import org.cactoos.text.TextOf;
+import org.cactoos.text.UncheckedText;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -44,7 +47,7 @@ final class UnusedDataContractTest {
         final Model model = new ModelOf(
             metadata,
             data,
-            new SameNameMapping(NamedReference::new)
+            new SameNameMapping(text -> new NamedReference(new UncheckedText(text).asString()))
         );
 
         assertFalse(interpreted.get());
@@ -52,7 +55,7 @@ final class UnusedDataContractTest {
         assertEquals(2L, model.spliterator().getExactSizeIfKnown());
         assertEquals(
             "Preserved source data",
-            new PropertyAt(description, model.data()).value().asText().asString()
+            new UncheckedText(new PropertyAt(description, model.data()).value().asText()).asString()
         );
         assertEquals(true, interpreted.get());
     }
