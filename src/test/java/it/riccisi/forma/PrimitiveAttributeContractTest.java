@@ -1,5 +1,7 @@
 package it.riccisi.forma;
 
+import it.riccisi.forma.observation.RejectedValue;
+import it.riccisi.forma.observation.UninterpretableValue;
 import it.riccisi.forma.attribute.AttributeNameOf;
 import it.riccisi.forma.attribute.IntegerAttribute;
 import it.riccisi.forma.attribute.NonBlankAttribute;
