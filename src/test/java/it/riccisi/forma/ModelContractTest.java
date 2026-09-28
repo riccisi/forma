@@ -1,7 +1,8 @@
 package it.riccisi.forma;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.sameInstance;
 
 import java.util.Iterator;
 import java.util.List;
@@ -24,60 +25,100 @@ import org.junit.jupiter.api.Test;
 final class ModelContractTest {
 
     @Test
-    void sameSemanticAttributeReadsHeterogeneousRepresentations() {
-        final AttributeName<Email> name = new AttributeNameOf<>("email");
-        final Attribute<Email> email = new EmailAttribute(name);
-        final PropertyReference reference = new NamedReference("email");
-
-        assertEquals(
-            "alice@example.com",
-            email.valueFrom(new JsonStringProperty(reference, "alice@example.com"))
-                .toString()
-        );
-        assertEquals(
-            "bob@example.com",
-            email.valueFrom(new MapStringProperty(reference, "bob@example.com"))
-                .toString()
-        );
-        assertEquals(
-            "carol@example.com",
-            email.valueFrom(new PojoStringProperty(reference, "carol@example.com"))
-                .toString()
+    void interpretsJsonProperty() {
+        assertThat(
+            new EmailAttribute(new AttributeNameOf<>("email")).valueFrom(
+                new JsonStringProperty(new NamedReference("email"), "alice@example.com")
+            ).toString(),
+            equalTo("alice@example.com")
         );
     }
 
     @Test
-    void propertyValuesOwnPrimitiveConversions() throws Exception {
-        final PropertyValue textual = new TextValue(new TextOf("42"));
-        final PropertyValue numeric = new NumberValue(42);
-
-        assertEquals("42", textual.asNumber().toString());
-        assertEquals("42", numeric.asText().asString());
+    void interpretsMapProperty() {
+        assertThat(
+            new EmailAttribute(new AttributeNameOf<>("email")).valueFrom(
+                new MapStringProperty(new NamedReference("email"), "bob@example.com")
+            ).toString(),
+            equalTo("bob@example.com")
+        );
     }
 
     @Test
-    void mappingBelongsToBindingRelationship() {
-        final AttributeName<Email> name = new AttributeNameOf<>("email");
-        final PropertyReference field = new NamedReference("e_mail");
-        final Attribute<Email> email = new EmailAttribute(name);
-        final Metadata metadata = new MetadataOf(email);
-        final Data data = new DataOf(new JsonStringProperty(field, "alice@example.com"));
-        final PropertyMapping mapping = new ExplicitMapping(
-            Map.of(new AttributeNameOf<Email>("email"), field)
+    void interpretsPojoProperty() {
+        assertThat(
+            new EmailAttribute(new AttributeNameOf<>("email")).valueFrom(
+                new PojoStringProperty(new NamedReference("email"), "carol@example.com")
+            ).toString(),
+            equalTo("carol@example.com")
         );
+    }
 
-        final Model model = new ModelOf(metadata, data, mapping);
-
-        assertSame(metadata, model.metadata());
-        assertSame(data, model.data());
-        assertEquals(
-            "alice@example.com",
-            new AttributeOf<Email>(
-                new AttributeNameOf<>("email"),
-                model
-            ).value().toString()
+    @Test
+    void convertsTextToNumber() {
+        assertThat(
+            new TextValue(new TextOf("42")).asNumber().toString(),
+            equalTo("42")
         );
-        assertSame(name, model.iterator().next().name());
+    }
+
+    @Test
+    void convertsNumberToText() {
+        assertThat(
+            new org.cactoos.text.UncheckedText(new NumberValue(42).asText()).asString(),
+            equalTo("42")
+        );
+    }
+
+    @Test
+    void retainsMetadataInMappedModel() {
+        final EmailModel scenario = new EmailModel();
+        assertThat(scenario.model.metadata(), sameInstance(scenario.metadata));
+    }
+
+    @Test
+    void retainsDataInMappedModel() {
+        final EmailModel scenario = new EmailModel();
+        assertThat(scenario.model.data(), sameInstance(scenario.data));
+    }
+
+    @Test
+    void resolvesExplicitlyMappedEmail() {
+        assertThat(new EmailModel().email(), equalTo("alice@example.com"));
+    }
+
+    @Test
+    void preservesAttributeIdentity() {
+        final EmailModel scenario = new EmailModel();
+        assertThat(scenario.model.iterator().next().name(), sameInstance(scenario.name));
+    }
+
+    private static final class EmailModel {
+
+        private final AttributeName<Email> name;
+        private final Metadata metadata;
+        private final Data data;
+        private final Model model;
+
+        private EmailModel() {
+            this.name = new AttributeNameOf<>("email");
+            final PropertyReference field = new NamedReference("e_mail");
+            this.metadata = new MetadataOf(new EmailAttribute(this.name));
+            this.data = new DataOf(
+                new JsonStringProperty(field, "alice@example.com")
+            );
+            this.model = new ModelOf(
+                this.metadata,
+                this.data,
+                new ExplicitMapping(Map.of(new AttributeNameOf<Email>("email"), field))
+            );
+        }
+
+        String email() {
+            return new AttributeOf<Email>(
+                new AttributeNameOf<>("email"), this.model
+            ).value().toString();
+        }
     }
 
     private record Email(Text text) {
