@@ -1,7 +1,7 @@
 package it.riccisi.forma.property;
 
 import it.riccisi.forma.Data;
-import it.riccisi.forma.MissingProperty;
+import it.riccisi.forma.observation.MissingProperty;
 import it.riccisi.forma.Property;
 import it.riccisi.forma.PropertyReference;
 import it.riccisi.forma.PropertyValue;
