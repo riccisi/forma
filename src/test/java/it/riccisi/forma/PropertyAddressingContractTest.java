@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import org.cactoos.Text;
 import org.cactoos.text.TextOf;
+import org.cactoos.text.UncheckedText;
 import org.junit.jupiter.api.Test;
 
 final class PropertyAddressingContractTest {
@@ -156,12 +157,8 @@ final class PropertyAddressingContractTest {
         }
 
         @Override
-        protected ModelAttribute<String> bind(final Text value) {
-            try {
-                return new BoundAttribute<>(this.name, value.asString());
-            } catch (final Exception err) {
-                throw new IllegalArgumentException(err);
-            }
+        protected String interpret(Text value) {
+            return new UncheckedText(value).asString();
         }
     }
 

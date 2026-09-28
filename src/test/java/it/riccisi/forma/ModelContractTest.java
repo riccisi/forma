@@ -20,18 +20,18 @@ final class ModelContractTest {
 
         assertEquals(
             "alice@example.com",
-            email.from(new JsonStringProperty(reference, "alice@example.com"))
-                .value().toString()
+            email.valueFrom(new JsonStringProperty(reference, "alice@example.com"))
+                .toString()
         );
         assertEquals(
             "bob@example.com",
-            email.from(new MapStringProperty(reference, "bob@example.com"))
-                .value().toString()
+            email.valueFrom(new MapStringProperty(reference, "bob@example.com"))
+                .toString()
         );
         assertEquals(
             "carol@example.com",
-            email.from(new PojoStringProperty(reference, "carol@example.com"))
-                .value().toString()
+            email.valueFrom(new PojoStringProperty(reference, "carol@example.com"))
+                .toString()
         );
     }
 
@@ -151,8 +151,8 @@ final class ModelContractTest {
         }
 
         @Override
-        protected ModelAttribute<Email> bind(final Text value) {
-            return new BoundModelAttribute<>(this.name, new Email(value));
+        protected Email interpret(Text value) {
+            return new Email(value);
         }
     }
 

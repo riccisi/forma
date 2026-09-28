@@ -3,8 +3,8 @@ package it.riccisi.forma;
 import org.cactoos.text.TextOf;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 
 /**
  * Contract spike for primitive semantic attributes.
@@ -13,13 +13,12 @@ final class PrimitiveAttributeContractTest {
 
     @Test
     void bindsTextWithoutKnowingItsRepresentation() {
-        final AttributeName<String> name = new AttributeNameOf<>("name");
-        final Attribute<String> attribute = new StringAttribute(name);
-        final ModelAttribute<String> bound = attribute.from(
-            new ValueProperty(new Reference(), new TextValue(new TextOf("Ada")))
+        assertThat(
+            new StringAttribute(new AttributeNameOf<>("name")).valueFrom(
+                new ValueProperty(new Reference(), new TextValue(new TextOf("Ada")))
+            ),
+            equalTo("Ada")
         );
-        assertEquals(name, bound.name());
-        assertEquals("Ada", bound.value());
     }
 
     @Test
