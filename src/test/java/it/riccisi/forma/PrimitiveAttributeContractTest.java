@@ -24,7 +24,9 @@ final class PrimitiveAttributeContractTest {
     @Test
     void bindsTextWithoutKnowingItsRepresentation() {
         assertThat(
-            new StringAttribute(new AttributeNameOf<>("name")).valueFrom(
+            new StringAttribute(
+                new AttributeNameOf<>("name")
+            ).valueFrom(
                 new ValueProperty(new Reference(), new TextValue(new TextOf("Ada")))
             ),
             equalTo("Ada")

@@ -5,6 +5,18 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 import java.util.Map;
 import java.util.stream.StreamSupport;
+
+import it.riccisi.forma.attribute.AttributeNameOf;
+import it.riccisi.forma.attribute.IntegerAttribute;
+import it.riccisi.forma.attribute.NonBlankAttribute;
+import it.riccisi.forma.attribute.StringAttribute;
+import it.riccisi.forma.data.HashtableData;
+import it.riccisi.forma.metadata.MetadataOf;
+import it.riccisi.forma.model.AttributeOf;
+import it.riccisi.forma.model.ModelOf;
+import it.riccisi.forma.property.NumberValue;
+import it.riccisi.forma.property.PropertyAt;
+import it.riccisi.forma.property.TextValue;
 import org.cactoos.text.TextOf;
 import org.junit.jupiter.api.Test;
 

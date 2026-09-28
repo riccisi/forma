@@ -5,6 +5,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Map;
 import java.util.stream.StreamSupport;
+
+import it.riccisi.forma.attribute.AttributeNameOf;
+import it.riccisi.forma.data.HashtableData;
+import it.riccisi.forma.property.NumberValue;
+import it.riccisi.forma.property.PropertyAt;
+import it.riccisi.forma.property.TextValue;
 import org.cactoos.text.TextOf;
 import org.junit.jupiter.api.Test;
 

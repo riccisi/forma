@@ -6,6 +6,13 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
+import it.riccisi.forma.attribute.AttributeNameOf;
+import it.riccisi.forma.attribute.TextAttribute;
+import it.riccisi.forma.model.AttributeOf;
+import it.riccisi.forma.model.ModelOf;
+import it.riccisi.forma.property.NumberValue;
+import it.riccisi.forma.property.TextValue;
 import org.cactoos.Text;
 import org.cactoos.text.TextOf;
 import org.junit.jupiter.api.Test;
