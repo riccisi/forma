@@ -1,7 +1,7 @@
 package it.riccisi.forma.property;
 
 import it.riccisi.forma.PropertyValue;
-import it.riccisi.forma.UninterpretableValue;
+import it.riccisi.forma.observation.UninterpretableValue;
 import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
 import org.cactoos.Text;
