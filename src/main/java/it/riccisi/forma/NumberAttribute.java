@@ -11,15 +11,15 @@ package it.riccisi.forma;
 public abstract class NumberAttribute<T> implements Attribute<T> {
 
     @Override
-    public final ModelAttribute<T> from(final Property property) {
-        return this.bind(property.value().asNumber());
+    public final T valueFrom(final Property property) {
+        return this.interpret(property.value().asNumber());
     }
 
     /**
      * Interprets a represented number as a semantic value.
      *
      * @param value numeric representation
-     * @return successfully bound model attribute
+     * @return semantic value
      */
-    protected abstract ModelAttribute<T> bind(Number value);
+    protected abstract T interpret(Number value);
 }
