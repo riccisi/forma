@@ -1,5 +1,13 @@
 package it.riccisi.forma;
 
+import it.riccisi.forma.attribute.AttributeNameOf;
+import it.riccisi.forma.attribute.IntegerAttribute;
+import it.riccisi.forma.attribute.NonBlankAttribute;
+import it.riccisi.forma.attribute.StringAttribute;
+import it.riccisi.forma.property.NumberValue;
+import it.riccisi.forma.property.TextValue;
+import it.riccisi.forma.property.ValueProperty;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
