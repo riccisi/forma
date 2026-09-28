@@ -1,5 +1,6 @@
 package it.riccisi.forma;
 
+import it.riccisi.forma.observation.MissingProperty;
 import it.riccisi.forma.attribute.AttributeNameOf;
 import it.riccisi.forma.data.HashtableData;
 import it.riccisi.forma.mapping.ExplicitMapping;
