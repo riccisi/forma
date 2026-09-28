@@ -1,10 +1,12 @@
 package it.riccisi.forma;
 
-import org.cactoos.text.TextOf;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import org.cactoos.text.TextOf;
+import org.junit.jupiter.api.Test;
 
 /**
  * Contract spike for primitive semantic attributes.
@@ -23,59 +25,61 @@ final class PrimitiveAttributeContractTest {
 
     @Test
     void composesSemanticConstraintAroundPrimitiveAttribute() {
-        final AttributeName<String> name = new AttributeNameOf<>("name");
-        final Attribute<String> attribute = new NonBlankAttribute(
-            new StringAttribute(name)
+        assertThat(
+            new NonBlankAttribute(
+                new StringAttribute(new AttributeNameOf<>("name"))
+            ).valueFrom(
+                new ValueProperty(new Reference(), new TextValue(new TextOf("Ada")))
+            ),
+            equalTo("Ada")
         );
-        final ModelAttribute<String> bound = attribute.from(
-            new ValueProperty(new Reference(), new TextValue(new TextOf("Ada")))
-        );
-        assertEquals(name, bound.name());
-        assertEquals("Ada", bound.value());
     }
 
     @Test
     void rejectsValueThroughSemanticConstraint() {
-        final Attribute<String> attribute = new NonBlankAttribute(
-            new StringAttribute(new AttributeNameOf<>("name"))
-        );
         assertThrows(
-            IllegalArgumentException.class,
-            () -> attribute.from(
-                new ValueProperty(new Reference(), new TextValue(new TextOf("   ")))
+            RejectedValue.class,
+            () -> new NonBlankAttribute(
+                new StringAttribute(new AttributeNameOf<>("name"))
+            ).valueFrom(
+                new ValueProperty(
+                    new Reference(),
+                    new TextValue(new TextOf("   "))
+                )
             )
         );
     }
 
     @Test
     void bindsIntegerFromNumericRepresentation() {
-        final AttributeName<Integer> name = new AttributeNameOf<>("age");
-        final Attribute<Integer> attribute = new IntegerAttribute(name);
-        final ModelAttribute<Integer> bound = attribute.from(
-            new ValueProperty(new Reference(), new NumberValue(42))
+        assertThat(
+            new IntegerAttribute(new AttributeNameOf<>("age")).valueFrom(
+                new ValueProperty(new Reference(), new NumberValue(42))
+            ),
+            is(42)
         );
-        assertEquals(name, bound.name());
-        assertEquals(42, bound.value());
     }
 
     @Test
     void bindsIntegerFromConvertibleTextRepresentation() {
-        final AttributeName<Integer> name = new AttributeNameOf<>("age");
-        final Attribute<Integer> attribute = new IntegerAttribute(name);
-        final ModelAttribute<Integer> bound = attribute.from(
-            new ValueProperty(new Reference(), new TextValue(new TextOf("42")))
+        assertThat(
+            new IntegerAttribute(new AttributeNameOf<>("age")).valueFrom(
+                new ValueProperty(
+                    new Reference(),
+                    new TextValue(new TextOf("42"))
+                )
+            ),
+            is(42)
         );
-        assertEquals(42, bound.value());
     }
 
     @Test
     void rejectsNonIntegralNumberAsIntegerSemantics() {
-        final Attribute<Integer> attribute = new IntegerAttribute(
-            new AttributeNameOf<>("age")
-        );
         assertThrows(
-            IllegalArgumentException.class,
-            () -> attribute.from(
+            UninterpretableValue.class,
+            () -> new IntegerAttribute(
+                new AttributeNameOf<>("age")
+            ).valueFrom(
                 new ValueProperty(new Reference(), new NumberValue(42.5))
             )
         );
@@ -83,12 +87,11 @@ final class PrimitiveAttributeContractTest {
 
     @Test
     void rejectsIntegerOutsideJavaRange() {
-        final Attribute<Integer> attribute = new IntegerAttribute(
-            new AttributeNameOf<>("age")
-        );
         assertThrows(
-            IllegalArgumentException.class,
-            () -> attribute.from(
+            UninterpretableValue.class,
+            () -> new IntegerAttribute(
+                new AttributeNameOf<>("age")
+            ).valueFrom(
                 new ValueProperty(
                     new Reference(),
                     new TextValue(new TextOf("2147483648"))
@@ -99,12 +102,11 @@ final class PrimitiveAttributeContractTest {
 
     @Test
     void rejectsTextThatCannotBeInterpretedAsInteger() {
-        final Attribute<Integer> attribute = new IntegerAttribute(
-            new AttributeNameOf<>("age")
-        );
         assertThrows(
-            IllegalArgumentException.class,
-            () -> attribute.from(
+            UninterpretableValue.class,
+            () -> new IntegerAttribute(
+                new AttributeNameOf<>("age")
+            ).valueFrom(
                 new ValueProperty(
                     new Reference(),
                     new TextValue(new TextOf("forty-two"))
