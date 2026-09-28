@@ -1,41 +1,34 @@
 package it.riccisi.forma;
 
 /**
- * A valid semantic interpretation of represented data.
+ * A semantic view of represented data through metadata.
  *
- * <p>A model differs from a data transfer object: it does not need to reproduce
- * the represented shape as Java state. Metadata determines which represented
- * information must be understood for the model to exist. Every attribute
- * declared by that metadata is therefore established during model construction,
- * while information not described by metadata remains data and need not be
- * interpreted.
+ * <p>A model composes represented {@link Data}, semantic {@link Metadata}, and
+ * the mapping between their coordinates. Construction establishes that
+ * composition without requiring represented values to be interpreted.
  *
- * <p>A model is complete with respect to its metadata, not with respect to its
- * data. The underlying data may contain more information than the model means,
- * and that information remains preserved without becoming semantic state merely
- * because it is present in the representation.
+ * <p>Iteration exposes semantic attribute observations described by metadata.
+ * A value crosses the representation-to-semantics boundary when that
+ * observation is requested. Missing, uninterpretable, or rejected represented
+ * values therefore fail at observation rather than model construction.
  *
- * <p>A model exposes the semantic attributes established by binding. Lookup by
- * attribute identity is a derived operation over this iterable observation.
+ * <p>The underlying data may contain more information than the model describes,
+ * and metadata may describe values that a consumer never observes. Neither case
+ * requires those values to be interpreted merely for the model object to exist.
  */
 public interface Model extends Iterable<ModelAttribute<?>> {
 
     /**
-     * Returns the metadata that established this model's semantic validity.
+     * Returns the metadata defining the semantic observations of this model.
      *
-     * @return metadata used for binding
+     * @return semantic metadata
      */
     Metadata metadata();
 
     /**
-     * Returns the represented data from which this model was constructed.
+     * Returns the represented data observed through this model.
      *
-     * <p>Access to source data does not weaken the model invariant. It means the
-     * model keeps the representation that supported the successful semantic
-     * interpretation, including information that metadata did not require to be
-     * interpreted and that therefore did not become a model attribute.
-     *
-     * @return represented source data
+     * @return represented data
      */
     Data data();
 }
