@@ -10,88 +10,127 @@ import it.riccisi.forma.property.NamedReference;
 import it.riccisi.forma.property.PropertyAt;
 import it.riccisi.forma.property.TextValue;
 import it.riccisi.forma.property.ValueProperty;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-
-import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.StreamSupport;
 import org.cactoos.Text;
 import org.cactoos.text.TextOf;
 import org.cactoos.text.UncheckedText;
 import org.junit.jupiter.api.Test;
-import java.util.stream.StreamSupport;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.sameInstance;
 
 /**
- * Contract proving that model construction interprets only information required
- * by metadata while preserving all represented data.
+ * Unused represented information remains accessible without being interpreted
+ * as part of model construction or metadata iteration.
  */
 final class UnusedDataContractTest {
 
     @Test
-    void preservesUnusedPropertyWithoutInterpretingItsValue() {
-        final AttributeName<String> id = new AttributeNameOf<>("id");
-        final AttributeName<String> status = new AttributeNameOf<>("status");
-        final PropertyReference idref = new NamedReference("id");
-        final PropertyReference statusref = new NamedReference("status");
-        final PropertyReference description = new NamedReference("description");
-        final AtomicBoolean interpreted = new AtomicBoolean();
-        final Data data = new DataOf(
-            new ValueProperty(idref, new TextValue(new TextOf("42"))),
-            new ValueProperty(statusref, new TextValue(new TextOf("ACTIVE"))),
-            new ValueProperty(
-                description,
-                new ObservedValue(
-                    new TextValue(new TextOf("Preserved source data")),
-                    interpreted
+    void constructionDoesNotInterpretUnusedProperty() {
+        assertThat(new UnusedPropertyScenario().interpreted(), is(false));
+    }
+
+    @Test
+    void modelRetainsOriginalData() {
+        final UnusedPropertyScenario scenario = new UnusedPropertyScenario();
+        assertThat(scenario.model.data(), sameInstance(scenario.data));
+    }
+
+    @Test
+    void modelExposesOnlyMetadataAttributes() {
+        assertThat(new UnusedPropertyScenario().attributeCount(), equalTo(2L));
+    }
+
+    @Test
+    void unusedPropertyCanStillBeRead() {
+        assertThat(
+            new UnusedPropertyScenario().description(),
+            equalTo("Preserved source data")
+        );
+    }
+
+    @Test
+    void readingUnusedPropertyInterpretsItsValue() {
+        assertThat(new UnusedPropertyScenario().interpretedAfterRead(), is(true));
+    }
+
+    private static final class UnusedPropertyScenario {
+
+        private final AtomicBoolean observed;
+        private final Data data;
+        private final Model model;
+
+        private UnusedPropertyScenario() {
+            this.observed = new AtomicBoolean();
+            final PropertyReference description = new NamedReference("description");
+            this.data = new DataOf(
+                new ValueProperty(
+                    new NamedReference("id"), new TextValue(new TextOf("42"))
+                ),
+                new ValueProperty(
+                    new NamedReference("status"), new TextValue(new TextOf("ACTIVE"))
+                ),
+                new ValueProperty(
+                    description,
+                    new ObservedValue(
+                        new TextValue(new TextOf("Preserved source data")),
+                        this.observed
+                    )
                 )
-            )
-        );
-        final Metadata metadata = new MetadataOf(
-            new StringAttribute(id),
-            new StringAttribute(status)
-        );
+            );
+            this.model = new ModelOf(
+                new MetadataOf(
+                    new StringAttribute(new AttributeNameOf<>("id")),
+                    new StringAttribute(new AttributeNameOf<>("status"))
+                ),
+                this.data,
+                new SameNameMapping(NamedReference::new)
+            );
+        }
 
-        final Model model = new ModelOf(
-            metadata,
-            data,
-            new SameNameMapping(text -> new NamedReference(new UncheckedText(text).asString()))
-        );
+        boolean interpreted() {
+            return this.observed.get();
+        }
 
-        assertFalse(interpreted.get());
-        assertSame(data, model.data());
-        assertEquals(2L, StreamSupport.stream(model.spliterator(), false).count());
-        assertEquals(
-            "Preserved source data",
-            new UncheckedText(new PropertyAt(description, model.data()).value().asText()).asString()
-        );
-        assertEquals(true, interpreted.get());
+        long attributeCount() {
+            return StreamSupport.stream(this.model.spliterator(), false).count();
+        }
+
+        String description() {
+            return new UncheckedText(
+                new PropertyAt(new NamedReference("description"), this.model.data())
+                    .value().asText()
+            ).asString();
+        }
+
+        boolean interpretedAfterRead() {
+            this.description();
+            return this.interpreted();
+        }
     }
 
     private static final class ObservedValue implements PropertyValue {
 
         private final PropertyValue origin;
-        private final AtomicBoolean interpreted;
+        private final AtomicBoolean observed;
 
-        private ObservedValue(
-            final PropertyValue origin,
-            final AtomicBoolean interpreted
-        ) {
+        private ObservedValue(final PropertyValue origin, final AtomicBoolean observed) {
             this.origin = origin;
-            this.interpreted = interpreted;
+            this.observed = observed;
         }
 
         @Override
         public Text asText() {
-            this.interpreted.set(true);
+            this.observed.set(true);
             return this.origin.asText();
         }
 
         @Override
         public Number asNumber() {
-            this.interpreted.set(true);
+            this.observed.set(true);
             return this.origin.asNumber();
         }
     }
