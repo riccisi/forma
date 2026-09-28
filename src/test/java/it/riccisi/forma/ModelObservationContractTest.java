@@ -1,5 +1,14 @@
 package it.riccisi.forma;
 
+import it.riccisi.forma.attribute.AttributeNameOf;
+import it.riccisi.forma.attribute.StringAttribute;
+import it.riccisi.forma.data.DataOf;
+import it.riccisi.forma.metadata.MetadataOf;
+import it.riccisi.forma.model.AttributeOf;
+import it.riccisi.forma.model.ModelOf;
+import it.riccisi.forma.property.NamedReference;
+import it.riccisi.forma.property.ValueProperty;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -88,9 +97,6 @@ final class ModelObservationContractTest {
         }
     }
 
-    private record NamedReference(String value) implements PropertyReference {
-    }
-
     private static final class CountingMapping implements PropertyMapping {
 
         private final AtomicInteger calls;
@@ -103,20 +109,6 @@ final class ModelObservationContractTest {
         public PropertyReference property(final AttributeName<?> attribute) {
             this.calls.incrementAndGet();
             return new NamedReference(new UncheckedText(attribute).asString());
-        }
-    }
-
-    private static final class DataOf implements Data {
-
-        private final Iterable<Property> properties;
-
-        private DataOf(final Property... properties) {
-            this.properties = List.of(properties);
-        }
-
-        @Override
-        public Iterator<Property> iterator() {
-            return this.properties.iterator();
         }
     }
 
