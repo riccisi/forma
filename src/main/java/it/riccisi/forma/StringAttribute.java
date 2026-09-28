@@ -19,7 +19,7 @@ public final class StringAttribute extends TextAttribute<String> {
     }
 
     @Override
-    protected ModelAttribute<String> bind(final Text value) {
-        return new BoundAttribute<>(this.name, new UncheckedText(value).asString());
+    protected String interpret(final Text value) {
+        return new UncheckedText(value).asString();
     }
 }
