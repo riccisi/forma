@@ -20,11 +20,11 @@ public final class NonBlankAttribute implements Attribute<String> {
     }
 
     @Override
-    public ModelAttribute<String> from(final Property property) {
-        final ModelAttribute<String> bound = this.origin.from(property);
-        if (bound.value().isBlank()) {
+    public String valueFrom(final Property property) {
+        final String value = this.origin.valueFrom(property);
+        if (value.isBlank()) {
             throw new RejectedValue("The semantic string cannot be blank");
         }
-        return bound;
+        return value;
     }
 }
