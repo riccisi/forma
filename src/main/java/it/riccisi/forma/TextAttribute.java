@@ -13,15 +13,15 @@ import org.cactoos.Text;
 public abstract class TextAttribute<T> implements Attribute<T> {
 
     @Override
-    public final ModelAttribute<T> from(final Property property) {
-        return this.bind(property.value().asText());
+    public final T valueFrom(final Property property) {
+        return this.interpret(property.value().asText());
     }
 
     /**
      * Interprets represented text as a semantic value.
      *
      * @param value textual representation
-     * @return successfully bound model attribute
+     * @return semantic value
      */
-    protected abstract ModelAttribute<T> bind(Text value);
+    protected abstract T interpret(Text value);
 }
