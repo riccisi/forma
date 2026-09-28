@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
@@ -130,7 +130,7 @@ RejectedValue
 
 These failures do not imply that the observer itself was structurally invalid.
 
-The boundary that knows both semantic identity and representation coordinate remains responsible for enriching a low-level `BindingReason` with that context. `BindingFailure` therefore remains useful, but its meaning changes from a failure to construct the whole `Model` to a failure to establish a requested semantic observation.
+The boundary that knows both semantic identity and representation coordinate remains responsible for enriching a low-level `ObservationReason` with that context. `ObservationFailure` therefore remains useful, but its meaning changes from a failure to construct the whole `Model` to a failure to establish a requested semantic observation.
 
 The existing principle remains valid:
 
@@ -192,7 +192,7 @@ Iteration over a `Model` may derive semantic attribute observations from `Metada
 
 `ModelAttribute` implementations used by a model may themselves be observational objects rather than necessarily precomputed value holders.
 
-`BindingFailure` documentation and creation points must describe semantic observation rather than whole-model construction.
+`ObservationFailure` documentation and creation points must describe semantic observation rather than whole-model construction.
 
 Tests must distinguish construction from observation. In particular they should prove that:
 
@@ -256,7 +256,7 @@ ADR-001 establishes that `Data` may be structurally immutable while representing
 
 This decision extends those principles to semantic observation.
 
-ADR-001 currently contains statements that equate Model construction with eager successful binding, including the claim that a Model either exists valid or does not exist. Those statements must be revised when this ADR is accepted.
+ADR-001 has been revised to distinguish structural object integrity from semantic validity established by observation.
 
 The fundamental separation remains unchanged:
 
