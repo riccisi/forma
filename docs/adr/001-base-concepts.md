@@ -241,7 +241,7 @@ Forma should:
 * allow data to be transformed and composed before assigning business meaning;
 * separate representation concerns from semantic structure and validation;
 * avoid representation-specific casts or type inspection in semantic attributes;
-* make valid semantic objects valid by construction;
+* make object integrity a construction invariant while establishing semantic validity through observation;
 * enable object composition instead of procedural mapping pipelines;
 * allow capabilities to emerge through focused object composition rather than centralized procedural descriptors;
 * make common data-oriented application concerns reusable once their semantics have been modeled;
@@ -486,7 +486,7 @@ public interface Attribute<T> {
 
     AttributeName<T> name();
 
-    ModelAttribute<T> from(Property property);
+    T valueFrom(Property property);
 }
 ```
 
@@ -665,39 +665,28 @@ Property lookup therefore does not imply textual name equality. A semantic `emai
 
 Representation coordinates and semantic attribute names remain separate concepts.
 
-### Binding is construction
+### Construction and semantic observation
 
-Model construction establishes semantic validity while creating the model.
+Model construction establishes the integrity of the semantic view by composing
+`Metadata`, `Data`, and `PropertyMapping`. It does not establish facts about
+represented information merely as a consequence of construction.
 
-A successful result must never require a subsequent:
+Semantic validity is established when a model attribute is observed. That
+observation may locate a represented property, interpret its value, enforce
+attribute semantics, and either produce the requested value or fail with an
+`ObservationFailure`.
 
-```java
-model.isValid()
-```
-
-or:
-
-```java
-validator.validate(model)
-```
-
-before use.
-
-> **Metadata binding is construction, not validation after construction.**
-
-More precisely in the current object model:
-
-> **Binding is not something Metadata does. Binding is how a Model comes into existence.**
+> **Construction establishes object integrity; observation establishes facts about observed data.**
 
 Therefore:
 
-> **A Model either exists in a valid state, or it does not exist.**
+> **A Model always satisfies its structural invariants; semantic validity is established by its observations.**
 
-The representation of binding failures and whether multiple violations are accumulated remain separate API decisions.
+This distinction is specified in ADR-003.
 
 ### ModelAttribute
 
-`ModelAttribute<T>` represents a successful semantic binding.
+`ModelAttribute<T>` represents a typed semantic observation exposed by a model.
 
 ```java
 public interface ModelAttribute<T> {
@@ -708,13 +697,11 @@ public interface ModelAttribute<T> {
 }
 ```
 
-Its value has already crossed the representation-to-semantics boundary and has already satisfied the corresponding attribute semantics.
-
-A `ModelAttribute` is therefore evidence that a concrete portion of represented data satisfies a semantic attribute.
+Its `name()` can be observed without interpreting represented data. Calling `value()` establishes the requested semantic interpretation and may fail according to the represented state observed at that time.
 
 ### Model
 
-A `Model` represents `Data` that has successfully acquired a semantic interpretation through `Metadata`.
+A `Model` is a semantic view of `Data` through `Metadata` and a `PropertyMapping`.
 
 ```java
 public interface Model extends Iterable<ModelAttribute<?>> {
@@ -725,7 +712,7 @@ public interface Model extends Iterable<ModelAttribute<?>> {
 }
 ```
 
-A `Model` differs fundamentally from a DTO. A DTO usually reproduces a data shape as Java state; a Model establishes a valid semantic interpretation over data.
+A `Model` differs fundamentally from a DTO. A DTO usually reproduces a data shape as Java state; a Model describes semantic observations over represented data.
 
 The underlying information does not have to be copied into equivalent Java fields.
 
@@ -735,9 +722,9 @@ Typed lookup is a derived observation rather than a fundamental method on `Model
 String name = new AttributeOf<>(nameAttribute, model).value();
 ```
 
-This keeps `Model` small while preserving the type invariant established during construction.
+This keeps `Model` small while preserving typed semantic observation.
 
-> **Model is trustworthy.**
+> **A Model is a semantic view of Data through Metadata.**
 
 ### Access to underlying Data
 
@@ -962,9 +949,9 @@ Data / Metadata / Model ─┼── CRUD
 
 > **Same name is a mapping convention, not a universal representation coordinate.**
 
-> **Binding is not something Metadata does. Binding is how a Model comes into existence.**
+> **Construction establishes object integrity; observation establishes facts about observed data.**
 
-> **A Model either exists in a valid state, or it does not exist.**
+> **A Model always satisfies its structural invariants; semantic validity is established by its observations.**
 
 > **Interpret what the application needs; preserve the rest as data.**
 
@@ -1028,15 +1015,15 @@ Forma models the underlying data concepts so focused components can collaborate 
 
 Rejected.
 
-Partial and intermediate information may not yet satisfy a complete semantic structure. `Data` exists independently; successful construction establishes a `Model` associated with `Metadata`.
+Partial and intermediate information may not yet satisfy a complete semantic structure. `Data` exists independently; a `Model` composes it with `Metadata` and a `PropertyMapping` to describe semantic observations.
 
 ### Metadata owns construction
 
 Rejected.
 
-`Metadata` describes semantics. Model construction establishes that concrete `Data` satisfies those semantics through a particular `PropertyMapping`.
+`Metadata` describes semantics. Model construction composes those semantics with concrete `Data` through a particular `PropertyMapping`; observations establish whether represented state satisfies them.
 
-Putting construction behavior on `Metadata` would conflate description with the act that creates a valid semantic association.
+Putting construction behavior on `Metadata` would conflate semantic description with the composition and observation of represented data.
 
 ### Data directly exposes semantic attributes
 
@@ -1124,9 +1111,9 @@ Rejected.
 
 An `AttributeName` identifies an attribute within a metadata context. Context already supplied by `Metadata` must not be redundantly encoded into every attribute name merely to obtain global identity.
 
-### Model may exist in an invalid state
+### Model uses mutable validation state
 
-Rejected. Validity is a construction invariant.
+Rejected. A Model is structurally valid by construction and does not transition from unvalidated to validated. Semantic observations establish facts about represented state when requested.
 
 ### Data and Model implement output formats directly
 
@@ -1181,7 +1168,7 @@ The following details remain deliberately unresolved:
 * exact conversion and failure semantics for incompatible `PropertyValue` interpretations;
 * concrete `PropertyReference` kinds required by JSON, JDBC, POJO, positional, and other data representations;
 * additional standard `PropertyMapping` strategies beyond the current same-name convention;
-* exact binding failure semantics;
+* exact observation failure semantics;
 * missing, optional, and required property semantics;
 * fail-fast versus accumulated binding violations;
 * the definitive set of primitive `Attribute<T>` implementations and decorators;
