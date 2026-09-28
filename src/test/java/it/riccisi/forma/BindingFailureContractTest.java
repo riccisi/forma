@@ -1,5 +1,16 @@
 package it.riccisi.forma;
 
+import it.riccisi.forma.attribute.AttributeNameOf;
+import it.riccisi.forma.attribute.IntegerAttribute;
+import it.riccisi.forma.attribute.NonBlankAttribute;
+import it.riccisi.forma.attribute.StringAttribute;
+import it.riccisi.forma.data.HashtableData;
+import it.riccisi.forma.metadata.MetadataOf;
+import it.riccisi.forma.model.AttributeOf;
+import it.riccisi.forma.model.ModelOf;
+import it.riccisi.forma.property.NamedReference;
+import it.riccisi.forma.property.TextValue;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -114,8 +125,5 @@ final class BindingFailureContractTest {
         public String rejectedValue() {
             return "rejected";
         }
-    }
-
-    private record NamedReference(String value) implements PropertyReference {
     }
 }
