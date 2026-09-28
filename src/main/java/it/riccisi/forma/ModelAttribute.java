@@ -1,27 +1,17 @@
 package it.riccisi.forma;
 
 /**
- * Evidence that a concrete property satisfies a semantic attribute.
+ * A typed semantic observation exposed by a model.
  *
- * <p>A model attribute is produced by successful binding. Its value has already
- * crossed the representation-to-semantics boundary and can be trusted as the
- * value of the returned {@link AttributeName}.
+ * <p>The attribute identity is available without interpreting represented data.
+ * Requesting the value establishes the semantic interpretation and may fail
+ * when represented state cannot satisfy it.
  *
  * @param <T> semantic value type
  */
 public interface ModelAttribute<T> {
 
-    /**
-     * Returns the typed semantic identity of this bound value.
-     *
-     * @return attribute identity
-     */
     AttributeName<T> name();
 
-    /**
-     * Returns the interpreted and accepted semantic value.
-     *
-     * @return semantic value
-     */
     T value();
 }
