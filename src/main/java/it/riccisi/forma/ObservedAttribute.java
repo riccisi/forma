@@ -6,9 +6,10 @@ import lombok.RequiredArgsConstructor;
 /**
  * Semantic observation of one represented attribute.
  *
- * <p>Construction retains the semantic attribute, representation coordinate,
- * and data source without interpreting the represented value. Interpretation
- * and validation happen when the semantic value is observed.
+ * <p>Construction retains the semantic attribute, property mapping, and data
+ * source without resolving a representation coordinate or interpreting its
+ * value. Mapping, interpretation, and validation happen when the semantic value
+ * is observed.
  *
  * @param <T> semantic value type
  */
@@ -16,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 final class ObservedAttribute<T> implements ModelAttribute<T> {
 
     @NonNull private final Attribute<T> attribute;
-    @NonNull private final PropertyReference reference;
+    @NonNull private final PropertyMapping mapping;
     @NonNull private final Data data;
 
     @Override
@@ -26,12 +27,14 @@ final class ObservedAttribute<T> implements ModelAttribute<T> {
 
     @Override
     public T value() {
+        final PropertyReference reference =
+            this.mapping.property(this.attribute.name());
         try {
-            return this.attribute.from(new PropertyAt(this.reference, this.data)).value();
+            return this.attribute.from(new PropertyAt(reference, this.data)).value();
         } catch (final BindingReason reason) {
             throw new BindingFailure(
                 this.attribute.name(),
-                this.reference,
+                reference,
                 reason
             );
         }
