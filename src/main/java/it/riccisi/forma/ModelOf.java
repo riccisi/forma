@@ -1,54 +1,23 @@
 package it.riccisi.forma;
 
 import java.util.Iterator;
-import lombok.AccessLevel;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.cactoos.iterable.Mapped;
-import org.cactoos.list.ListOf;
 
 /**
- * Model established by binding represented data to metadata.
+ * Semantic view of represented data through metadata.
  *
- * <p>Construction eagerly binds every semantic attribute. Consequently, an
- * instance exists only after all metadata invariants have been satisfied.
+ * <p>Construction composes the objects required for semantic observation. It
+ * does not interpret represented values. Iteration produces semantic attribute
+ * observations; their values are established only when requested.
  */
-@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+@RequiredArgsConstructor
 public final class ModelOf implements Model {
 
     @NonNull private final Metadata metadata;
     @NonNull private final Data data;
-    @NonNull private final Iterable<ModelAttribute<?>> attributes;
-
-    public ModelOf(
-        @NonNull final Metadata metadata,
-        @NonNull final Data data,
-        @NonNull final PropertyMapping mapping
-    ) {
-        this(
-            metadata,
-            data,
-            new ListOf<>(
-                new Mapped<ModelAttribute<?>>(
-                    attribute -> {
-                        final PropertyReference reference = mapping.property(attribute.name());
-                        try {
-                            return attribute.from(
-                                new PropertyAt(reference, data)
-                            );
-                        } catch (final BindingReason reason) {
-                            throw new BindingFailure(
-                                attribute.name(),
-                                reference,
-                                reason
-                            );
-                        }
-                    },
-                    metadata
-                )
-            )
-        );
-    }
+    @NonNull private final PropertyMapping mapping;
 
     @Override
     public Metadata metadata() {
@@ -62,6 +31,17 @@ public final class ModelOf implements Model {
 
     @Override
     public Iterator<ModelAttribute<?>> iterator() {
-        return this.attributes.iterator();
+        return new Mapped<Attribute<?>, ModelAttribute<?>>(
+            attribute -> this.observation(attribute),
+            this.metadata
+        ).iterator();
+    }
+
+    private <T> ModelAttribute<T> observation(final Attribute<T> attribute) {
+        return new ObservedAttribute<>(
+            attribute,
+            this.mapping.property(attribute.name()),
+            this.data
+        );
     }
 }
