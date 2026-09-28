@@ -3,7 +3,7 @@ package it.riccisi.forma.attribute;
 import it.riccisi.forma.Attribute;
 import it.riccisi.forma.AttributeName;
 import it.riccisi.forma.Property;
-import it.riccisi.forma.RejectedValue;
+import it.riccisi.forma.observation.RejectedValue;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
