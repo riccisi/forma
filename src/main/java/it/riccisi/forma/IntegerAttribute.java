@@ -18,12 +18,9 @@ public final class IntegerAttribute extends NumberAttribute<Integer> {
     }
 
     @Override
-    protected ModelAttribute<Integer> bind(final Number value) {
+    protected Integer interpret(final Number value) {
         try {
-            return new BoundAttribute<>(
-                this.name,
-                new BigDecimal(value.toString()).intValueExact()
-            );
+            return new BigDecimal(value.toString()).intValueExact();
         } catch (final ArithmeticException | NumberFormatException err) {
             throw new UninterpretableValue(err);
         }
