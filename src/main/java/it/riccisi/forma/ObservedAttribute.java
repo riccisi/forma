@@ -30,7 +30,7 @@ final class ObservedAttribute<T> implements ModelAttribute<T> {
         final PropertyReference reference =
             this.mapping.property(this.attribute.name());
         try {
-            return this.attribute.from(new PropertyAt(reference, this.data)).value();
+            return this.attribute.valueFrom(new PropertyAt(reference, this.data));
         } catch (final BindingReason reason) {
             throw new BindingFailure(
                 this.attribute.name(),
