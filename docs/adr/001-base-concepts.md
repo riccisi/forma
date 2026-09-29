@@ -558,7 +558,7 @@ It also does not belong intrinsically to an `Attribute`: semantic attributes mus
 ```java
 public interface FieldMapping {
 
-    FieldReference property(AttributeName<?> attribute);
+    FieldReference reference(AttributeName<?> attribute);
 }
 ```
 
@@ -577,7 +577,7 @@ Different mapping strategies may express different representation conventions, f
 ```text
 same textual name
 camelCase -> snake_case
-explicit attribute -> property mapping
+explicit attribute -> field mapping
 legacy field aliases
 ```
 
@@ -602,9 +602,9 @@ public interface Metadata extends Iterable<Attribute<?>> {
 }
 ```
 
-`Metadata` does not perform binding itself.
+`Metadata` describes semantic structure and does not itself relate that structure to a particular representation.
 
-Binding is how a `Model` comes into existence, so model construction owns the association between metadata, represented data, and the mapping that relates their coordinates.
+A `Model` owns the association between metadata, represented data, and the mapping that relates their coordinates.
 
 A concrete in-memory metadata can be composed directly:
 
@@ -621,87 +621,15 @@ A metadata object may instead be backed by configuration, a database, a remote s
 
 > **Metadata describes semantics; it does not prescribe where semantic knowledge must live.**
 
-### Model construction
+### Model
 
-`ModelOf` establishes the association between a `Metadata`, a `Data`, and a `FieldMapping`.
-
-Conceptually:
+`ModelOf` establishes the association between a `Metadata`, a `Data`, and a `FieldMapping`:
 
 ```java
 new ModelOf(metadata, data, mapping)
 ```
 
-Construction performs the semantic path:
-
-```text
-Metadata
-   ↓
-AttributeName
-   ↓
-FieldMapping
-   ↓
-FieldReference
-   ↓
-FieldAt(reference, Data)
-   ↓
-Attribute.valueFrom(Field)
-   ↓
-attribute value
-   ↓
-Model
-```
-
-This keeps addressing and interpretation as separate concerns:
-
-```text
-addressing:
-AttributeName -> FieldReference -> Field
-
-interpretation:
-Field -> FieldValue -> semantic value
-```
-
-Field lookup therefore does not imply textual name equality. A semantic `email` may map to JSON field `e_mail_address`, while a semantic `birthDate` may map to position 7 in a positional representation.
-
-Representation coordinates and semantic attribute names remain separate concepts.
-
-### Construction and semantic value
-
-Model construction establishes the integrity of the semantic view by composing
-`Metadata`, `Data`, and `FieldMapping`. It does not establish facts about
-represented information merely as a consequence of construction.
-
-Semantic validity is established when a model attribute is observed. That
-observation may locate a represented field, interpret its value, enforce
-attribute semantics, and either produce the requested value or fail with an
-`attribute valueException`.
-
-> **Construction establishes object integrity; reading establishes facts about represented data.**
-
-Therefore:
-
-> **A Model always satisfies its structural invariants; semantic validity is established by its observations.**
-
-This distinction is specified in ADR-003.
-
-### attribute value
-
-`T` represents a typed semantic value exposed by a model.
-
-```java
-public interface T {
-
-    AttributeName<T> name();
-
-    T value();
-}
-```
-
-Its `name()` can be observed without interpreting represented data. Calling `value()` establishes the requested semantic interpretation and may fail according to the represented state observed at that time.
-
-### Model
-
-A `Model` is a semantic view of `Data` through `Metadata` and a `FieldMapping`.
+A `Model` does not expose another collection derived from metadata. Its semantic structure is already available through `metadata()`.
 
 ```java
 public interface Model {
@@ -711,37 +639,77 @@ public interface Model {
 }
 ```
 
-A `Model` differs fundamentally from a DTO. A DTO usually reproduces a data shape as Java state; a Model describes semantic values over represented data.
+A value request follows this path:
 
-The underlying information does not have to be copied into equivalent Java fields.
-
-Typed lookup is a derived observation rather than a fundamental method on `Model`:
-
-```java
-String name = new attribute valueAt<>(nameAttribute, model).value();
+```text
+AttributeName<T>
+      │
+      ├───────────────┐
+      ▼               │
+ AttributeAt<T>       │ FieldMapping
+      │               ▼
+      │          FieldReference
+      │               │
+      │               ▼
+      │            FieldAt
+      │               │
+      └──── valueFrom ┘
+              │
+              ▼
+              T
 ```
 
-This keeps `Model` small while preserving typed semantic value.
+`AttributeAt` represents lookup by semantic coordinate inside `Metadata`; `FieldAt` represents lookup by representation coordinate inside `Data`.
+
+This keeps addressing and interpretation separate:
+
+```text
+semantic addressing:
+AttributeName -> Attribute
+
+representation addressing:
+FieldReference -> Field
+
+relation:
+AttributeName -> FieldMapping -> FieldReference
+
+interpretation:
+Attribute + Field -> semantic value
+```
+
+Field lookup therefore does not imply textual name equality. A semantic `email` may map to JSON field `e_mail_address`, while a semantic `birthDate` may map to position 7 in a positional representation.
 
 > **A Model is an instance of Metadata over Data.**
+
+> **Data exposes representation structure. Metadata exposes semantic structure. Model relates them; it does not define another structure.**
+
+### Construction and semantic values
+
+Model construction establishes object integrity by composing `Metadata`, `Data`, and `FieldMapping`. It does not establish facts about represented information merely as a consequence of construction.
+
+Semantic values are established when `Model.valueOf(...)` is requested. That request locates the semantic `Attribute`, maps its name to a representation coordinate, locates the corresponding `Field`, and lets the attribute interpret the field.
+
+> **Construction establishes object integrity; reading establishes facts about represented data.**
+
+A `Model` therefore has no mutable unvalidated-to-validated lifecycle. If the represented source changes, a later value request may establish a different fact unless explicit snapshot or caching semantics are composed around it.
 
 ### Access to underlying Data
 
 A `Model` retains access to the `Data` from which it was constructed.
 
-This enables further data-oriented operations without forcing all information into `attribute value`s.
+This enables further data-oriented operations without forcing all information into semantic Java state.
 
 For example:
 
 ```text
 Data
- ├─ id            → attribute value
- ├─ status        → attribute value
+ ├─ id            → interpreted when requested by Model
+ ├─ status        → interpreted when requested by Model
  ├─ description   → retained as Data
  └─ sourceNotes   → retained as Data
 ```
 
-The Model can expose semantic `id` and `status` without requiring `description` or `sourceNotes` to become explicit semantic Java state merely to preserve them.
+The Model can establish semantic `id` and `status` values without requiring `description` or `sourceNotes` to become explicit semantic Java state merely to preserve them.
 
 > **Interpret what the application needs; preserve the rest as data.**
 
