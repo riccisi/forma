@@ -369,6 +369,26 @@ The goal is to let concrete use cases shape these APIs without weakening the cor
 
 ---
 
+## Modules
+
+Forma is organized as a Maven multi-module project so that the core object model remains independent from representation-specific technologies.
+
+```text
+forma
+├── forma-core
+└── forma-json
+```
+
+`forma-core` contains the fundamental contracts, semantic objects, representation-independent data implementations, and composition objects.
+
+`forma-json` is the adapter module for JSON representations and depends on `forma-core`. Representation-specific libraries belong to adapter modules rather than to the core.
+
+> **Forma core defines what represented data is. Adapter modules define how a particular representation participates in that model.**
+
+The project currently targets Java 27.
+
+---
+
 ## Package
 
 The root Java package is:
