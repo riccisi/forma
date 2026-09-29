@@ -1,28 +1,22 @@
 package it.riccisi.forma.model;
 
+import it.riccisi.forma.AttributeValue;
 import it.riccisi.forma.Data;
+import it.riccisi.forma.FieldMapping;
 import it.riccisi.forma.Metadata;
 import it.riccisi.forma.Model;
-import it.riccisi.forma.ModelAttribute;
-import it.riccisi.forma.PropertyMapping;
 import java.util.Iterator;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.cactoos.iterator.Mapped;
 
-/**
- * Semantic view of represented data through metadata.
- *
- * <p>Construction composes the objects required for semantic observation. It
- * does not interpret represented values. Iteration produces semantic attribute
- * observations; their values are established only when requested.
- */
+/** An instance of metadata over represented data. */
 @RequiredArgsConstructor
 public final class ModelOf implements Model {
 
     @NonNull private final Metadata metadata;
     @NonNull private final Data data;
-    @NonNull private final PropertyMapping mapping;
+    @NonNull private final FieldMapping mapping;
 
     @Override
     public Metadata metadata() {
@@ -35,9 +29,9 @@ public final class ModelOf implements Model {
     }
 
     @Override
-    public Iterator<ModelAttribute<?>> iterator() {
+    public Iterator<AttributeValue<?>> iterator() {
         return new Mapped<>(
-            attribute -> new ObservedAttribute<>(
+            attribute -> new AttributeValueOf<>(
                 attribute,
                 this.mapping,
                 this.data
