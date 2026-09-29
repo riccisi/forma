@@ -54,6 +54,23 @@ Generic lookup is derived from these contracts. `FieldAt` represents the field a
 new FieldAt(reference, data)
 ```
 
+### Attribute lookup remains a semantic concern
+
+`Metadata` remains an iterable description rather than acquiring a repository-style lookup method. Generic semantic lookup is represented by `AttributeAt`:
+
+```java
+new AttributeAt<>(name, metadata)
+```
+
+This mirrors representation lookup without collapsing the two coordinate systems:
+
+```text
+Metadata + AttributeName  -> AttributeAt -> Attribute
+Data     + FieldReference -> FieldAt     -> Field
+```
+
+The symmetry is structural, while the coordinates remain semantically distinct.
+
 ### FieldMapping relates semantic names to representation coordinates
 
 ```java
