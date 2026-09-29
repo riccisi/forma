@@ -6,11 +6,11 @@ import it.riccisi.forma.data.DataOf;
 import it.riccisi.forma.mapping.ExplicitMapping;
 import it.riccisi.forma.mapping.SameNameMapping;
 import it.riccisi.forma.metadata.MetadataOf;
-import it.riccisi.forma.model.AttributeOf;
+import it.riccisi.forma.model.AttributeValueAt;
 import it.riccisi.forma.model.ModelOf;
-import it.riccisi.forma.property.NamedReference;
-import it.riccisi.forma.property.TextValue;
-import it.riccisi.forma.property.ValueProperty;
+import it.riccisi.forma.field.NamedReference;
+import it.riccisi.forma.field.TextValue;
+import it.riccisi.forma.field.FieldOf;
 import java.util.List;
 import java.util.Map;
 import org.cactoos.text.TextOf;
@@ -34,12 +34,12 @@ final class PropertyAddressingContractTest {
     void sameNameConventionDerivesRepresentationReference() {
         final AttributeName<String> email = new AttributeNameOf<>("email");
         assertThat(
-            new AttributeOf<>(
+            new AttributeValueAt<>(
                 email,
                 new ModelOf(
                     new MetadataOf(new StringAttribute(email)),
                     new DataOf(
-                        new ValueProperty(
+                        new FieldOf(
                             new NamedReference("email"),
                             new TextValue(new TextOf("alice@example.com"))
                         )
@@ -89,10 +89,10 @@ final class PropertyAddressingContractTest {
         assertThat(scenario.firstModel.data(), sameInstance(scenario.secondModel.data()));
     }
 
-    private record PositionalReference(int value) implements PropertyReference {
+    private record PositionalReference(int value) implements FieldReference {
     }
 
-    private record PathReference(List<String> segments) implements PropertyReference {
+    private record PathReference(List<String> segments) implements FieldReference {
     }
 
     private static final class EmailObservation {
@@ -100,12 +100,12 @@ final class PropertyAddressingContractTest {
         private final Model model;
         private final AttributeName<String> email;
 
-        private EmailObservation(final PropertyReference reference) {
+        private EmailObservation(final FieldReference reference) {
             this.email = new AttributeNameOf<>("email");
             this.model = new ModelOf(
                 new MetadataOf(new StringAttribute(this.email)),
                 new DataOf(
-                    new ValueProperty(
+                    new FieldOf(
                         reference,
                         new TextValue(new TextOf("alice@example.com"))
                     )
@@ -115,7 +115,7 @@ final class PropertyAddressingContractTest {
         }
 
         String value() {
-            return new AttributeOf<>(this.email, this.model).value();
+            return new AttributeValueAt<>(this.email, this.model).value();
         }
     }
 
@@ -127,12 +127,12 @@ final class PropertyAddressingContractTest {
 
         private AlternativeEmailObservations() {
             this.email = new AttributeNameOf<>("email");
-            final PropertyReference first = new NamedReference("email");
-            final PropertyReference second = new NamedReference("e_mail");
+            final FieldReference first = new NamedReference("email");
+            final FieldReference second = new NamedReference("e_mail");
             final Metadata metadata = new MetadataOf(new StringAttribute(this.email));
             final Data data = new DataOf(
-                new ValueProperty(first, new TextValue(new TextOf("first@example.com"))),
-                new ValueProperty(second, new TextValue(new TextOf("second@example.com")))
+                new FieldOf(first, new TextValue(new TextOf("first@example.com"))),
+                new FieldOf(second, new TextValue(new TextOf("second@example.com")))
             );
             this.firstModel = new ModelOf(
                 metadata, data, new ExplicitMapping(Map.of(this.email, first))
@@ -143,11 +143,11 @@ final class PropertyAddressingContractTest {
         }
 
         String first() {
-            return new AttributeOf<>(this.email, this.firstModel).value();
+            return new AttributeValueAt<>(this.email, this.firstModel).value();
         }
 
         String second() {
-            return new AttributeOf<>(this.email, this.secondModel).value();
+            return new AttributeValueAt<>(this.email, this.secondModel).value();
         }
     }
 }
