@@ -30,12 +30,12 @@ public final class MergedData implements Data {
         return new Mapped<Field>(
             reference -> new MergedField(reference, this.base, this.overlay),
             new SetOf<>(
-                new Joined<>(
-                    new Mapped<Field, FieldReference>(
+                new Joined<FieldReference>(
+                    new Mapped<>(
                         Field::reference,
                         this.base
                     ),
-                    new Mapped<Field, FieldReference>(
+                    new Mapped<>(
                         Field::reference,
                         this.overlay
                     )
