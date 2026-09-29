@@ -1,11 +1,20 @@
 package it.riccisi.forma;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.sameInstance;
 
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
+
+import it.riccisi.forma.attribute.AttributeNameOf;
+import it.riccisi.forma.attribute.TextAttribute;
+import it.riccisi.forma.data.DataOf;
+import it.riccisi.forma.mapping.ExplicitMapping;
+import it.riccisi.forma.metadata.MetadataOf;
+import it.riccisi.forma.field.NamedReference;
+import it.riccisi.forma.model.ModelOf;
+import it.riccisi.forma.field.NumberValue;
+import it.riccisi.forma.field.TextValue;
 import org.cactoos.Text;
 import org.cactoos.text.TextOf;
 import org.junit.jupiter.api.Test;
@@ -13,65 +22,94 @@ import org.junit.jupiter.api.Test;
 final class ModelContractTest {
 
     @Test
-    void sameSemanticAttributeReadsHeterogeneousRepresentations() {
-        final AttributeName<Email> name = new AttributeNameOf<>("email");
-        final Attribute<Email> email = new EmailAttribute(name);
-        final PropertyReference reference = new NamedReference("email");
-
-        assertEquals(
-            "alice@example.com",
-            email.from(new JsonStringProperty(reference, "alice@example.com"))
-                .value().toString()
-        );
-        assertEquals(
-            "bob@example.com",
-            email.from(new MapStringProperty(reference, "bob@example.com"))
-                .value().toString()
-        );
-        assertEquals(
-            "carol@example.com",
-            email.from(new PojoStringProperty(reference, "carol@example.com"))
-                .value().toString()
+    void interpretsJsonField() {
+        assertThat(
+            new EmailAttribute(new AttributeNameOf<>("email")).valueFrom(
+                new JsonStringField(new NamedReference("email"), "alice@example.com")
+            ).toString(),
+            equalTo("alice@example.com")
         );
     }
 
     @Test
-    void propertyValuesOwnPrimitiveConversions() throws Exception {
-        final PropertyValue textual = new TextValue(new TextOf("42"));
-        final PropertyValue numeric = new NumberValue(42);
-
-        assertEquals("42", textual.asNumber().toString());
-        assertEquals("42", numeric.asText().asString());
+    void interpretsMapField() {
+        assertThat(
+            new EmailAttribute(new AttributeNameOf<>("email")).valueFrom(
+                new MapStringField(new NamedReference("email"), "bob@example.com")
+            ).toString(),
+            equalTo("bob@example.com")
+        );
     }
 
     @Test
-    void mappingBelongsToBindingRelationship() {
-        final AttributeName<Email> name = new AttributeNameOf<>("email");
-        final PropertyReference field = new NamedReference("e_mail");
-        final Attribute<Email> email = new EmailAttribute(name);
-        final Metadata metadata = new SingleAttributeMetadata(email);
-        final Data data = new NamedData(
-            Map.of(field, new JsonStringProperty(field, "alice@example.com"))
+    void interpretsPojoField() {
+        assertThat(
+            new EmailAttribute(new AttributeNameOf<>("email")).valueFrom(
+                new PojoStringField(new NamedReference("email"), "carol@example.com")
+            ).toString(),
+            equalTo("carol@example.com")
         );
-        final PropertyMapping mapping = new ExplicitMapping(
-            Map.of(new AttributeNameOf<Email>("email"), field)
-        );
-
-        final Model model = new ModelOf(metadata, data, mapping);
-
-        assertSame(metadata, model.metadata());
-        assertSame(data, model.data());
-        assertEquals(
-            "alice@example.com",
-            new AttributeOf<Email>(
-                new AttributeNameOf<>("email"),
-                model
-            ).value().toString()
-        );
-        assertSame(name, model.iterator().next().name());
     }
 
-    private record NamedReference(String value) implements PropertyReference {
+    @Test
+    void convertsTextToNumber() {
+        assertThat(
+            new TextValue(new TextOf("42")).asNumber().toString(),
+            equalTo("42")
+        );
+    }
+
+    @Test
+    void convertsNumberToText() {
+        assertThat(
+            new org.cactoos.text.UncheckedText(new NumberValue(42).asText()).asString(),
+            equalTo("42")
+        );
+    }
+
+    @Test
+    void retainsMetadataInMappedModel() {
+        final EmailModel scenario = new EmailModel();
+        assertThat(scenario.model.metadata(), sameInstance(scenario.metadata));
+    }
+
+    @Test
+    void retainsDataInMappedModel() {
+        final EmailModel scenario = new EmailModel();
+        assertThat(scenario.model.data(), sameInstance(scenario.data));
+    }
+
+    @Test
+    void resolvesExplicitlyMappedEmail() {
+        assertThat(new EmailModel().email(), equalTo("alice@example.com"));
+    }
+
+    private static final class EmailModel {
+
+        private final AttributeName<Email> name;
+        private final Metadata metadata;
+        private final Data data;
+        private final Model model;
+
+        private EmailModel() {
+            this.name = new AttributeNameOf<>("email");
+            final FieldReference field = new NamedReference("e_mail");
+            this.metadata = new MetadataOf(new EmailAttribute(this.name));
+            this.data = new DataOf(
+                new JsonStringField(field, "alice@example.com")
+            );
+            this.model = new ModelOf(
+                this.metadata,
+                this.data,
+                new ExplicitMapping(Map.of(new AttributeNameOf<Email>("email"), field))
+            );
+        }
+
+        String email() {
+            return this.model.valueOf(
+                new AttributeNameOf<Email>("email")
+            ).toString();
+        }
     }
 
     private record Email(Text text) {
@@ -86,53 +124,53 @@ final class ModelContractTest {
         }
     }
 
-    private record JsonStringProperty(
-        PropertyReference reference,
+    private record JsonStringField(
+        FieldReference reference,
         Text text
-    ) implements Property {
-        private JsonStringProperty(
-            final PropertyReference reference,
+    ) implements Field {
+        private JsonStringField(
+            final FieldReference reference,
             final String text
         ) {
             this(reference, new TextOf(text));
         }
 
         @Override
-        public PropertyValue value() {
+        public FieldValue value() {
             return new TextValue(this.text);
         }
     }
 
-    private record MapStringProperty(
-        PropertyReference reference,
+    private record MapStringField(
+        FieldReference reference,
         Text text
-    ) implements Property {
-        private MapStringProperty(
-            final PropertyReference reference,
+    ) implements Field {
+        private MapStringField(
+            final FieldReference reference,
             final String text
         ) {
             this(reference, new TextOf(text));
         }
 
         @Override
-        public PropertyValue value() {
+        public FieldValue value() {
             return new TextValue(this.text);
         }
     }
 
-    private record PojoStringProperty(
-        PropertyReference reference,
+    private record PojoStringField(
+        FieldReference reference,
         Text text
-    ) implements Property {
-        private PojoStringProperty(
-            final PropertyReference reference,
+    ) implements Field {
+        private PojoStringField(
+            final FieldReference reference,
             final String text
         ) {
             this(reference, new TextOf(text));
         }
 
         @Override
-        public PropertyValue value() {
+        public FieldValue value() {
             return new TextValue(this.text);
         }
     }
@@ -151,42 +189,9 @@ final class ModelContractTest {
         }
 
         @Override
-        protected ModelAttribute<Email> bind(final Text value) {
-            return new BoundModelAttribute<>(this.name, new Email(value));
+        protected Email interpret(Text value) {
+            return new Email(value);
         }
     }
 
-    private record NamedData(
-        Map<PropertyReference, Property> properties
-    ) implements Data {
-
-        @Override
-        public Iterator<Property> iterator() {
-            return this.properties.values().iterator();
-        }
-    }
-
-    private record ExplicitMapping(
-        Map<AttributeName<?>, PropertyReference> references
-    ) implements PropertyMapping {
-
-        @Override
-        public PropertyReference property(final AttributeName<?> attribute) {
-            return this.references.get(attribute);
-        }
-    }
-
-    private record SingleAttributeMetadata(Attribute<?> attribute) implements Metadata {
-
-        @Override
-        public Iterator<Attribute<?>> iterator() {
-            return List.<Attribute<?>>of(this.attribute).iterator();
-        }
-    }
-
-    private record BoundModelAttribute<T>(
-        AttributeName<T> name,
-        T value
-    ) implements ModelAttribute<T> {
-    }
 }

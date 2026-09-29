@@ -94,276 +94,94 @@ Or, more practically:
 
 ## Core concepts
 
-Forma separates representation from semantics through a small set of concepts:
+Forma separates representation from semantics through a small object vocabulary:
 
 ```text
-Data
-  ↓
-Property
-  ↓
-Attribute
-  ↓
-ModelAttribute
-  ↓
-Model
+REPRESENTATION                  SEMANTICS
+
+Data                            Metadata
+ └── Field                      └── Attribute<T>
+      ├── FieldReference              └── AttributeName<T>
+      └── FieldValue
+
+            FieldMapping
+                 │
+                 ▼
+               Model
+                 │
+                 └── valueOf(AttributeName<T>) → T
 ```
 
-Each step introduces a stronger semantic commitment.
+### Data and Field
 
-### Data
-
-`Data` represents information.
-
-It does not claim that the information is complete, valid, or associated with any particular business model.
-
-Conceptually:
+`Data` represents information without claiming semantic validity and is composed of addressable `Field` objects.
 
 ```java
-public interface Data extends Iterable<Property> {
+public interface Data extends Iterable<Field> {
+}
+
+public interface Field {
+    FieldReference reference();
+    FieldValue value();
 }
 ```
 
-A `Data` may represent:
+A `FieldReference` identifies a field within a representation. Its concrete shape belongs to that representation: a name, position, path, column, member, or another coordinate.
 
-* a JSON document;
-* a JDBC row;
-* a Java object;
-* a map;
-* a positional record;
-* a partial HTTP request;
-* the result of combining other data.
+A `FieldValue` exposes representation-level value forms without assigning business meaning.
 
-A `Data` may also be intentionally incomplete.
+> **A Field is an addressable portion of represented Data.**
 
-For example:
+### Attribute and Metadata
 
-```json
-{
-  "email": "new@example.com",
-  "phone": "+390000000"
-}
-```
-
-may be perfectly valid `Data` even though it is not a complete `Student`.
-
-> **Data is transformable.**
-
----
-
-### Property
-
-A `Property` represents an interpretable portion of data.
-
-Forma deliberately avoids reducing every property to:
+An `Attribute<T>` gives semantic meaning to a represented field.
 
 ```java
-Object
-```
-
-or forcing every source through a universal representation such as:
-
-```text
-String
-byte[]
-InputStream
-```
-
-Doing so would throw away information already understood by the underlying technology.
-
-A JSON parser already knows whether a value is a string, number, boolean, array, or object.
-
-A JDBC driver may already expose `BigDecimal`, temporal values, booleans, binary values, and other useful representations.
-
-Forma allows that knowledge to be preserved through an interpreter-style API.
-
-Conceptually:
-
-```java
-public interface Property {
-
-    <T> T describe(PropertyValue<T> value);
-}
-```
-
-The property vocabulary remains representation-oriented.
-
-Business concepts such as `Email`, `Money`, or `StudentId` belong to attributes, not properties.
-
-This boundary also makes representation decorators possible:
-
-```text
-EncryptedProperty
-    ↓
-DecryptedProperty
-    ↓
-Attribute interpretation
-```
-
-> **Property transformations operate on representation. Attribute interpretation establishes meaning.**
-
----
-
-### Attribute
-
-An `Attribute<T>` describes a semantic coordinate of a model.
-
-It determines how appropriate data is interpreted as `T` and which rules must hold for that value.
-
-Examples may range from basic representations:
-
-```text
-TextAttribute
-IntAttribute
-DecimalAttribute
-BooleanAttribute
-```
-
-to richer semantics:
-
-```text
-EmailAttribute
-MoneyAttribute
-StudentIdAttribute
-```
-
-and composable constraints:
-
-```text
-NonNullAttribute
-PositiveAttribute
-```
-
-Conceptually:
-
-```text
-Property
-    ↓
-TextAttribute
-    ↓
-EmailAttribute
-    ↓
-NonNullAttribute
-    ↓
-ModelAttribute<Email>
-```
-
-Two attributes remain different even when they have compatible types.
-
-```text
-Student.email : Attribute<Email>
-Teacher.email : Attribute<Email>
-```
-
-They share the semantic type `Email`, but they do not share identity.
-
-This distinction may later enable type-safe projections between different models.
-
----
-
-### Metadata
-
-`Metadata` describes the semantic structure and invariants of a model.
-
-It is not merely a passive list of fields.
-
-Its main responsibility is to establish whether arbitrary `Data` can become a valid semantic model.
-
-Conceptually:
-
-```java
-public interface Metadata extends Iterable<Attribute<?>> {
-
-    Model bind(Data data);
-}
-```
-
-Binding is a construction boundary:
-
-```text
-Data
- +
-Metadata
-    ↓
-  bind
-    ↓
-Model
-```
-
-A successful binding produces a valid model.
-
-An unsuccessful binding does not produce an invalid one.
-
-> **Metadata binding is construction, not validation after construction.**
-
-Therefore:
-
-> **A Model either exists in a valid state, or it does not exist.**
-
----
-
-### ModelAttribute
-
-A `ModelAttribute<T>` represents an attribute that has been successfully interpreted and validated against concrete data.
-
-Conceptually:
-
-```java
-public interface ModelAttribute<T> {
-
+public interface Attribute<T> {
     AttributeName<T> name();
-
-    T value();
+    T valueFrom(Field field);
 }
 ```
 
-It is evidence that a portion of represented information successfully satisfies a semantic attribute.
+`Metadata` is first-class semantic knowledge composed of attributes. It describes how represented information may be understood; it does not require data to be read or validated during model construction.
 
-```text
-Property + Attribute<T>
-          ↓
-       binding
-          ↓
-ModelAttribute<T>
+> **Data represents information. Metadata describes how that information can be understood.**
+
+### FieldMapping
+
+Representation coordinates and semantic names remain distinct. A `FieldMapping` relates them:
+
+```java
+public interface FieldMapping {
+    FieldReference reference(AttributeName<?> attribute);
+}
 ```
 
----
+This lets the same metadata describe JSON fields, JDBC columns, POJO members, positional records, or other representations without coupling either side to the other's coordinate system.
 
 ### Model
 
-A `Model` is data whose semantic structure and invariants have been successfully established by `Metadata`.
-
-Conceptually:
+A `Model` is an instance of `Metadata` over `Data`. It relates semantic structure to represented information; it does not introduce another iterable structure.
 
 ```java
 public interface Model {
-
     Metadata metadata();
-
     Data data();
-
-    <T> T value(Attribute<T> attribute);
+    <T> T valueOf(AttributeName<T> name);
 }
 ```
 
-Unlike a DTO, a model does not necessarily reproduce its entire data representation as Java state.
+`Data` exposes representation structure through its fields. `Metadata` exposes semantic structure through its attributes. A model uses those two structures, together with its `FieldMapping`, to establish the requested semantic value.
 
-It establishes a valid semantic interpretation over the underlying data.
-
-For example:
-
-```text
-Data
- ├── id            -> ModelAttribute<StudentId>
- ├── status        -> ModelAttribute<StudentStatus>
- ├── description   -> preserved as Data
- └── sourceNotes   -> preserved as Data
+```java
+String name = model.valueOf(new AttributeNameOf<>("name"));
 ```
 
-Application behavior can reason about `id` and `status` without introducing Java fields for `description` and `sourceNotes` merely to avoid losing them.
+Construction composes the model without reading represented values. Only `valueOf(...)` establishes the requested value.
 
-> **Model is trustworthy.**
+> **Data exposes representation structure. Metadata exposes semantic structure. Model relates them; it does not define another structure.**
 
----
+Unused fields remain data and do not need equivalent Java attributes.
 
 ## Data composition
 
@@ -378,7 +196,7 @@ JsonData
    ↓
 MergedData
    ↓
-StudentMetadata.bind(...)
+new ModelOf(StudentMetadata, ..., mapping)
    ↓
 Student Model
 ```
@@ -391,7 +209,7 @@ Data candidate = new MergedData(
     update
 );
 
-Model student = students.bind(candidate);
+Model student = new ModelOf(students, candidate, mapping);
 ```
 
 Possible data compositions may include:
@@ -446,23 +264,7 @@ Student POJO
   PojoData
 ```
 
-This is different from a `PojoModel`.
-
-A `PojoData` interprets an arbitrary Java object as data.
-
-A `PojoModel` may additionally derive metadata from the Java class, annotations, reflection, or another description mechanism and bind that data automatically.
-
-Conceptually:
-
-```text
-PojoData(object)
-       +
-PojoMetadata(object.getClass())
-       ↓
-      bind
-       ↓
-   PojoModel
-```
+A `PojoData` interprets an arbitrary Java object as represented data. Metadata derived from a Java class, annotations, reflection, or another description mechanism remains a separate semantic description and can be related to that data by a `Model`.
 
 The distinction remains:
 
@@ -512,13 +314,15 @@ Forma is guided by a few principles.
 
 > **Data is transformable.**
 
-> **Property transformations operate on representation. Attribute interpretation establishes meaning.**
+> **Field transformations operate on representation. Attribute interpretation establishes meaning.**
 
-> **Metadata binding is construction, not validation after construction.**
+> **Construction establishes object integrity; reading values establishes facts about represented data.**
 
-> **A Model either exists in a valid state, or it does not exist.**
+> **A Model is an instance of Metadata over Data.**
 
-> **Model is trustworthy.**
+> **Data exposes representation structure. Metadata exposes semantic structure. Model relates them; it does not define another structure.**
+
+> **A Model does not require all represented values to be read during construction.**
 
 ---
 
@@ -549,10 +353,10 @@ The semantic model is being defined first. Concrete APIs and integrations will e
 
 In particular, some API details are intentionally still open, including:
 
-* the final `Property` interpreter vocabulary;
-* binding failure and validation reporting;
+* the final `FieldValue` representation vocabulary;
+* attribute value failure reporting;
 * the exact role of typed `AttributeName<T>`;
-* property addressing;
+* field addressing;
 * typed model projections;
 * canonical model representation;
 * printing and serialization APIs.

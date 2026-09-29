@@ -1,97 +1,142 @@
 package it.riccisi.forma;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
+import it.riccisi.forma.exception.MissingFieldException;
+import it.riccisi.forma.attribute.AttributeNameOf;
+import it.riccisi.forma.data.HashtableData;
+import it.riccisi.forma.mapping.ExplicitMapping;
+import it.riccisi.forma.field.NamedReference;
+import it.riccisi.forma.field.NumberValue;
+import it.riccisi.forma.field.FieldAt;
+import it.riccisi.forma.field.TextValue;
 import java.util.Map;
 import java.util.stream.StreamSupport;
 import org.cactoos.text.TextOf;
+import org.cactoos.text.UncheckedText;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 final class HashtableDataTest {
 
     @Test
-    void resolvesValuesThroughPropertyAt() throws Exception {
-        final PropertyReference name = new NamedReference("name");
-        final PropertyReference age = new PositionalReference(1);
-        final Data data = new HashtableData(
-            Map.of(
-                name, new TextValue(new TextOf("Alice")),
-                age, new NumberValue(42)
-            )
-        );
-
-        assertEquals(
-            "Alice",
-            new PropertyAt(name, data).value().asText().asString()
-        );
-        assertEquals(
-            42,
-            new PropertyAt(age, data).value().asNumber().intValue()
+    void resolvesTextThroughFieldAt() {
+        assertThat(
+            new UncheckedText(
+                new FieldAt(
+                    new NamedReference("name"),
+                    new HashtableData(Map.of(
+                        new NamedReference("name"), new TextValue(new TextOf("Alice")),
+                        new PositionalReference(1), new NumberValue(42)
+                    ))
+                ).value().asText()
+            ).asString(),
+            equalTo("Alice")
         );
     }
 
     @Test
-    void participatesInThePropertyMappingProtocol() throws Exception {
-        final AttributeName<String> email = new AttributeNameOf<>("email");
-        final PropertyReference field = new NamedReference("e_mail_address");
-        final Data data = new HashtableData(
-            Map.of(field, new TextValue(new TextOf("alice@example.com")))
-        );
-        final PropertyMapping mapping = attribute -> field;
-
-        assertEquals(
-            "alice@example.com",
-            new PropertyAt(mapping.property(email), data)
-                .value().asText().asString()
+    void resolvesNumberThroughFieldAt() {
+        assertThat(
+            new FieldAt(
+                new PositionalReference(1),
+                new HashtableData(Map.of(
+                    new NamedReference("name"), new TextValue(new TextOf("Alice")),
+                    new PositionalReference(1), new NumberValue(42)
+                ))
+            ).value().asNumber().intValue(),
+            equalTo(42)
         );
     }
 
     @Test
-    void propertiesCarryTheirRepresentationCoordinates() {
-        final PropertyReference status = new NamedReference("status");
-        final Data data = new HashtableData(
-            Map.of(status, new TextValue(new TextOf("ACTIVE")))
+    void participatesInTheFieldMappingProtocol() {
+        assertThat(
+            new UncheckedText(
+                new FieldAt(
+                    new ExplicitMapping(
+                        Map.of(new AttributeNameOf<String>("email"),
+                            new NamedReference("e_mail_address"))
+                    ).reference(new AttributeNameOf<String>("email")),
+                    new HashtableData(Map.of(
+                        new NamedReference("e_mail_address"),
+                        new TextValue(new TextOf("alice@example.com"))
+                    ))
+                ).value().asText()
+            ).asString(),
+            equalTo("alice@example.com")
         );
-
-        assertEquals(status, data.iterator().next().reference());
     }
 
     @Test
-    void preservesInformationNotConsumedByASemanticBinding() throws Exception {
-        final PropertyReference status = new NamedReference("status");
-        final PropertyReference description = new NamedReference("description");
-        final Data data = new HashtableData(
-            Map.of(
-                status, new TextValue(new TextOf("ACTIVE")),
-                description, new TextValue(new TextOf("Imported externally"))
-            )
+    void fieldsCarryTheirRepresentationCoordinates() {
+        assertThat(
+            new HashtableData(Map.of(
+                new NamedReference("status"), new TextValue(new TextOf("ACTIVE"))
+            )).iterator().next().reference(),
+            equalTo(new NamedReference("status"))
         );
-
-        assertEquals(
-            "ACTIVE",
-            new PropertyAt(status, data).value().asText().asString()
-        );
-        assertEquals(
-            "Imported externally",
-            new PropertyAt(description, data).value().asText().asString()
-        );
-        assertEquals(2L, StreamSupport.stream(data.spliterator(), false).count());
     }
 
     @Test
-    void propertyAtFailsWhenReferenceIsAbsent() {
-        final Data data = new HashtableData(Map.of());
+    void preservesUnconsumedFields() {
+        assertThat(
+            StreamSupport.stream(
+                new HashtableData(Map.of(
+                    new NamedReference("status"), new TextValue(new TextOf("ACTIVE")),
+                    new NamedReference("description"),
+                    new TextValue(new TextOf("Imported externally"))
+                )).spliterator(), false
+            ).count(),
+            equalTo(2L)
+        );
+    }
 
+    @Test
+    void preservesFirstUnconsumedFieldValue() {
+        assertThat(
+            new UncheckedText(
+                new FieldAt(
+                    new NamedReference("status"),
+                    new HashtableData(Map.of(
+                        new NamedReference("status"), new TextValue(new TextOf("ACTIVE")),
+                        new NamedReference("description"),
+                        new TextValue(new TextOf("Imported externally"))
+                    ))
+                ).value().asText()
+            ).asString(),
+            equalTo("ACTIVE")
+        );
+    }
+
+    @Test
+    void preservesSecondUnconsumedFieldValue() {
+        assertThat(
+            new UncheckedText(
+                new FieldAt(
+                    new NamedReference("description"),
+                    new HashtableData(Map.of(
+                        new NamedReference("status"), new TextValue(new TextOf("ACTIVE")),
+                        new NamedReference("description"),
+                        new TextValue(new TextOf("Imported externally"))
+                    ))
+                ).value().asText()
+            ).asString(),
+            equalTo("Imported externally")
+        );
+    }
+
+    @Test
+    void fieldAtFailsWhenReferenceIsAbsent() {
         assertThrows(
-            MissingProperty.class,
-            () -> new PropertyAt(new NamedReference("missing"), data).value()
+            MissingFieldException.class,
+            () -> new FieldAt(
+                new NamedReference("missing"), new HashtableData(Map.of())
+            ).value()
         );
     }
 
-    private record NamedReference(String value) implements PropertyReference {
-    }
-
-    private record PositionalReference(int value) implements PropertyReference {
+    private record PositionalReference(int value) implements FieldReference {
     }
 }

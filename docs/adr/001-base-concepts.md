@@ -164,7 +164,7 @@ Forma takes a different view:
 
 > **Forma applies domain modeling to data itself.**
 
-`Data`, `Property`, `Attribute`, `Metadata`, and `Model` are therefore not abstractions introduced merely to avoid DTO boilerplate.
+`Data`, `Field`, `Attribute`, `Metadata`, and `Model` are therefore not abstractions introduced merely to avoid DTO boilerplate.
 
 They form a shared object-oriented vocabulary through which components concerned with data can collaborate.
 
@@ -241,7 +241,7 @@ Forma should:
 * allow data to be transformed and composed before assigning business meaning;
 * separate representation concerns from semantic structure and validation;
 * avoid representation-specific casts or type inspection in semantic attributes;
-* make valid semantic objects valid by construction;
+* make object integrity a construction invariant while establishing semantic values when requested;
 * enable object composition instead of procedural mapping pipelines;
 * allow capabilities to emerge through focused object composition rather than centralized procedural descriptors;
 * make common data-oriented application concerns reusable once their semantics have been modeled;
@@ -254,14 +254,14 @@ Forma introduces the following core abstractions:
 
 ```text
 Data
-PropertyReference
-Property
-PropertyValue
+FieldReference
+Field
+FieldValue
 Attribute<T>
 AttributeName<T>
-PropertyMapping
+FieldMapping
 Metadata
-ModelAttribute<T>
+T
 Model
 ```
 
@@ -282,18 +282,18 @@ successful semantic interpretation
 The fundamental contract is intentionally small:
 
 ```java
-public interface Data extends Iterable<Property> {
+public interface Data extends Iterable<Field> {
 }
 ```
 
 A `Data` may be complete, partial, projected, merged, filtered, dynamically backed by another source, or unrelated to any known business model.
 
-Each iterated `Property` carries its own representation coordinate. Lookup is therefore derivable from observation and does not need to be prescribed by the fundamental `Data` contract.
+Each iterated `Field` carries its own representation coordinate. Lookup is therefore derivable from iteration and does not need to be prescribed by the fundamental `Data` contract.
 
 A generic locating object can express that operation independently:
 
 ```java
-new PropertyAt(reference, data)
+new FieldAt(reference, data)
 ```
 
 `Data` deliberately does not accept `AttributeName` as a lookup coordinate. A data representation must be able to exist independently from any `Model` or `Metadata` that may later be associated with it.
@@ -349,14 +349,14 @@ Data candidate = new MergedData(
 
 `MergedData` defines merge semantics only. It does not decide whether the resulting information constitutes a valid Student. That responsibility belongs to the semantic association established through `Metadata` and model construction.
 
-Keeping `Data` iterable over `Property` is important because properties remain first-class representation objects over which compositions can operate.
+Keeping `Data` iterable over `Field` is important because properties remain first-class representation objects over which compositions can operate.
 
-### PropertyReference
+### FieldReference
 
-`PropertyReference` is a coordinate understood by a concrete `Data` representation.
+`FieldReference` is a coordinate understood by a concrete `Data` representation.
 
 ```java
-public interface PropertyReference {
+public interface FieldReference {
 }
 ```
 
@@ -375,16 +375,16 @@ POJO member
 
 Forma core knows that data has coordinates, not what shape those coordinates have.
 
-### Property
+### Field
 
-A `Property` is an addressable, individually interpretable portion of represented data.
+A `Field` is an addressable, individually interpretable portion of represented data.
 
 ```java
-public interface Property {
+public interface Field {
 
-    PropertyReference reference();
+    FieldReference reference();
 
-    PropertyValue value();
+    FieldValue value();
 }
 ```
 
@@ -398,14 +398,14 @@ because that would move casts and representation interpretation into clients.
 
 It also rejects forcing every value through a single `String`, `byte[]`, or `InputStream`, because that may discard information already available in the underlying representation and cause unnecessary re-encoding and parsing.
 
-### PropertyValue
+### FieldValue
 
-`PropertyValue` is the small common vocabulary through which primitive represented values can be interpreted.
+`FieldValue` is the small common vocabulary through which primitive represented values can be interpreted.
 
 The initial contract is deliberately small:
 
 ```java
-public interface PropertyValue {
+public interface FieldValue {
 
     Text asText();
 
@@ -415,7 +415,7 @@ public interface PropertyValue {
 
 Additional fundamental interpretations such as booleans, nested data, collections, binary values, or temporal values must be introduced only when concrete representations demonstrate that they belong in the common model.
 
-`PropertyValue` is not an interpreter or closed visitor. This avoids requiring every semantic attribute to implement methods for value kinds that it cannot consume.
+`FieldValue` is not an interpreter or closed visitor. This avoids requiring every semantic attribute to implement methods for value kinds that it cannot consume.
 
 Instead, concrete value objects own representation-level conversion rules:
 
@@ -435,7 +435,7 @@ NumberValue(42).asText()     -> "42"
 
 A conversion is valid when the represented information admits that interpretation. A textual value containing a valid number may therefore legitimately provide `asNumber()`. A textual value that cannot be interpreted numerically fails at that representation boundary.
 
-This centralizes primitive conversion logic in reusable value objects instead of repeating it in every `JsonProperty`, `JdbcProperty`, `PojoProperty`, or other concrete `Property` implementation.
+This centralizes primitive conversion logic in reusable value objects instead of repeating it in every `JsonField`, `JdbcField`, `PojoField`, or other concrete `Field` implementation.
 
 The common vocabulary must remain representation-level. It must not contain business concepts such as:
 
@@ -447,16 +447,16 @@ StudentId
 
 Those belong to semantic interpretation.
 
-### Property transformations
+### Field transformations
 
-Because `Property` encapsulates representation, decorators can transform representation without involving business semantics.
+Because `Field` encapsulates representation, decorators can transform representation without involving business semantics.
 
 Possible examples include:
 
 ```text
-DecryptedProperty
-DecodedProperty
-DecompressedProperty
+DecryptedField
+DecodedField
+DecompressedField
 ```
 
 Conceptually:
@@ -464,9 +464,9 @@ Conceptually:
 ```text
 physical representation
         ↓
-Property decorator
+Field decorator
         ↓
-PropertyValue
+FieldValue
         ↓
 Attribute interpretation
         ↓
@@ -475,22 +475,22 @@ semantic value
 
 This establishes:
 
-> **Property transformations operate on representation. Attribute interpretation establishes meaning.**
+> **Field transformations operate on representation. Attribute interpretation establishes meaning.**
 
 ### Attribute
 
-`Attribute<T>` describes a semantic coordinate and the rules required to establish a semantic value from a represented property.
+`Attribute<T>` describes a semantic coordinate and the rules required to establish a semantic value from a represented field.
 
 ```java
 public interface Attribute<T> {
 
     AttributeName<T> name();
 
-    ModelAttribute<T> from(Property property);
+    T valueFrom(Field property);
 }
 ```
 
-An attribute obtains the primitive interpretation it needs from `PropertyValue`.
+An attribute obtains the primitive interpretation it needs from `FieldValue`.
 
 For example, a textual family may interpret through:
 
@@ -519,7 +519,7 @@ NonBlankAttribute
 
 The important boundary is that primitive attributes interpret representation while attribute decorators constrain already established semantics.
 
-This avoids `instanceof`, `Class<?>`, representation-specific property types, capability witness objects, and closed visitor methods inside semantic attributes.
+This avoids `instanceof`, `Class<?>`, representation-specific field types, capability witness objects, and closed visitor methods inside semantic attributes.
 
 It also creates a natural extension point for additional data-oriented vocabularies. An object concerned with persistence, relations, editing, rendering, or another specialized concern may interpret focused attribute objects or decorators without adding unrelated methods to every `Attribute`.
 
@@ -547,18 +547,18 @@ Equal textual names represent the same attribute name within the metadata contex
 
 The generic type gives compile-time information to typed consumers, while the actual type invariant is established when the model is constructed.
 
-### PropertyMapping
+### FieldMapping
 
-`PropertyMapping` belongs to the relationship between semantic metadata and a concrete data representation.
+`FieldMapping` belongs to the relationship between semantic metadata and a concrete data representation.
 
 It does not belong intrinsically to `Data`: a `Data` object must remain valid without knowing that it will ever be associated with a model.
 
 It also does not belong intrinsically to an `Attribute`: semantic attributes must remain unaware of physical representation coordinates.
 
 ```java
-public interface PropertyMapping {
+public interface FieldMapping {
 
-    PropertyReference property(AttributeName<?> attribute);
+    FieldReference reference(AttributeName<?> attribute);
 }
 ```
 
@@ -567,9 +567,9 @@ The mapping connects:
 ```text
 AttributeName
      ↓
-PropertyMapping
+FieldMapping
      ↓
-PropertyReference
+FieldReference
 ```
 
 Different mapping strategies may express different representation conventions, for example:
@@ -577,13 +577,13 @@ Different mapping strategies may express different representation conventions, f
 ```text
 same textual name
 camelCase -> snake_case
-explicit attribute -> property mapping
+explicit attribute -> field mapping
 legacy field aliases
 ```
 
 The same `Metadata` may consequently participate in different data representations through different mappings, and the same `Data` may be interpreted through different semantic associations without becoming aware of them.
 
-A same-name convention still requires a representation-specific way to construct a `PropertyReference`:
+A same-name convention still requires a representation-specific way to construct a `FieldReference`:
 
 ```java
 new SameNameMapping(JsonField::new)
@@ -602,9 +602,9 @@ public interface Metadata extends Iterable<Attribute<?>> {
 }
 ```
 
-`Metadata` does not perform binding itself.
+`Metadata` describes semantic structure and does not itself relate that structure to a particular representation.
 
-Binding is how a `Model` comes into existence, so model construction owns the association between metadata, represented data, and the mapping that relates their coordinates.
+A `Model` owns the association between metadata, represented data, and the mapping that relates their coordinates.
 
 A concrete in-memory metadata can be composed directly:
 
@@ -621,141 +621,95 @@ A metadata object may instead be backed by configuration, a database, a remote s
 
 > **Metadata describes semantics; it does not prescribe where semantic knowledge must live.**
 
-### Model construction
+### Model
 
-`ModelOf` establishes the association between a `Metadata`, a `Data`, and a `PropertyMapping`.
-
-Conceptually:
+`ModelOf` establishes the association between a `Metadata`, a `Data`, and a `FieldMapping`:
 
 ```java
 new ModelOf(metadata, data, mapping)
 ```
 
-Construction performs the semantic path:
+A `Model` does not expose another collection derived from metadata. Its semantic structure is already available through `metadata()`.
 
-```text
-Metadata
-   ↓
-AttributeName
-   ↓
-PropertyMapping
-   ↓
-PropertyReference
-   ↓
-PropertyAt(reference, Data)
-   ↓
-Attribute.from(Property)
-   ↓
-ModelAttribute
-   ↓
-Model
+```java
+public interface Model {
+    Metadata metadata();
+    Data data();
+    <T> T valueOf(AttributeName<T> name);
+}
 ```
 
-This keeps addressing and interpretation as separate concerns:
+A value request follows this path:
 
 ```text
-addressing:
-AttributeName -> PropertyReference -> Property
+AttributeName<T>
+      │
+      ├───────────────┐
+      ▼               │
+ AttributeAt<T>       │ FieldMapping
+      │               ▼
+      │          FieldReference
+      │               │
+      │               ▼
+      │            FieldAt
+      │               │
+      └──── valueFrom ┘
+              │
+              ▼
+              T
+```
+
+`AttributeAt` represents lookup by semantic coordinate inside `Metadata`; `FieldAt` represents lookup by representation coordinate inside `Data`.
+
+This keeps addressing and interpretation separate:
+
+```text
+semantic addressing:
+AttributeName -> Attribute
+
+representation addressing:
+FieldReference -> Field
+
+relation:
+AttributeName -> FieldMapping -> FieldReference
 
 interpretation:
-Property -> PropertyValue -> semantic value
+Attribute + Field -> semantic value
 ```
 
-Property lookup therefore does not imply textual name equality. A semantic `email` may map to JSON field `e_mail_address`, while a semantic `birthDate` may map to position 7 in a positional representation.
+Field lookup therefore does not imply textual name equality. A semantic `email` may map to JSON field `e_mail_address`, while a semantic `birthDate` may map to position 7 in a positional representation.
 
-Representation coordinates and semantic attribute names remain separate concepts.
+> **A Model is an instance of Metadata over Data.**
 
-### Binding is construction
+> **Data exposes representation structure. Metadata exposes semantic structure. Model relates them; it does not define another structure.**
 
-Model construction establishes semantic validity while creating the model.
+### Construction and semantic values
 
-A successful result must never require a subsequent:
+Model construction establishes object integrity by composing `Metadata`, `Data`, and `FieldMapping`. It does not establish facts about represented information merely as a consequence of construction.
 
-```java
-model.isValid()
-```
+Semantic values are established when `Model.valueOf(...)` is requested. That request locates the semantic `Attribute`, maps its name to a representation coordinate, locates the corresponding `Field`, and lets the attribute interpret the field.
 
-or:
+> **Construction establishes object integrity; reading establishes facts about represented data.**
 
-```java
-validator.validate(model)
-```
-
-before use.
-
-> **Metadata binding is construction, not validation after construction.**
-
-More precisely in the current object model:
-
-> **Binding is not something Metadata does. Binding is how a Model comes into existence.**
-
-Therefore:
-
-> **A Model either exists in a valid state, or it does not exist.**
-
-The representation of binding failures and whether multiple violations are accumulated remain separate API decisions.
-
-### ModelAttribute
-
-`ModelAttribute<T>` represents a successful semantic binding.
-
-```java
-public interface ModelAttribute<T> {
-
-    AttributeName<T> name();
-
-    T value();
-}
-```
-
-Its value has already crossed the representation-to-semantics boundary and has already satisfied the corresponding attribute semantics.
-
-A `ModelAttribute` is therefore evidence that a concrete portion of represented data satisfies a semantic attribute.
-
-### Model
-
-A `Model` represents `Data` that has successfully acquired a semantic interpretation through `Metadata`.
-
-```java
-public interface Model extends Iterable<ModelAttribute<?>> {
-
-    Metadata metadata();
-
-    Data data();
-}
-```
-
-A `Model` differs fundamentally from a DTO. A DTO usually reproduces a data shape as Java state; a Model establishes a valid semantic interpretation over data.
-
-The underlying information does not have to be copied into equivalent Java fields.
-
-Typed lookup is a derived observation rather than a fundamental method on `Model`:
-
-```java
-String name = new AttributeOf<>(nameAttribute, model).value();
-```
-
-This keeps `Model` small while preserving the type invariant established during construction.
-
-> **Model is trustworthy.**
+A `Model` therefore has no mutable unvalidated-to-validated lifecycle. If the represented source changes, a later value request may establish a different fact unless explicit snapshot or caching semantics are composed around it.
 
 ### Access to underlying Data
 
 A `Model` retains access to the `Data` from which it was constructed.
 
-This enables further data-oriented operations without forcing all information into `ModelAttribute`s.
+This enables further data-oriented operations without forcing all information into semantic Java state.
 
 For example:
 
 ```text
 Data
- ├─ id            → ModelAttribute
- ├─ status        → ModelAttribute
+ ├─ id            → interpreted when requested by Model
+ ├─ status        → interpreted when requested by Model
  ├─ description   → retained as Data
  └─ sourceNotes   → retained as Data
 ```
 
-The Model can expose semantic `id` and `status` without requiring `description` or `sourceNotes` to become explicit semantic Java state merely to preserve them.
+The Model can establish semantic `id` and `status` values without requiring `description` or `sourceNotes` to become explicit semantic Java state merely to preserve them.
 
 > **Interpret what the application needs; preserve the rest as data.**
 
@@ -886,7 +840,7 @@ A domain object may therefore consume or wrap a `Model` instead of reproducing t
                             │
                       Properties
                             │
-                     PropertyValue
+                     FieldValue
                             │
                             │ interpreted by
                             ▼
@@ -896,13 +850,13 @@ A domain object may therefore consume or wrap a `Model` instead of reproducing t
                             ▼
                          Metadata
                             │
-                    + PropertyMapping
+                    + FieldMapping
                             │
                             │ construction
                             ▼
                           Model
                             │
-                      ModelAttributes
+                      attribute values
                             │
                             ▼
                          SEMANTICS
@@ -913,9 +867,9 @@ The coordinate relationship remains orthogonal:
 ```text
 AttributeName
      ↓
-PropertyMapping
+FieldMapping
      ↓
-PropertyReference
+FieldReference
      ↓
 Data
 ```
@@ -948,23 +902,25 @@ Data / Metadata / Model ─┼── CRUD
 
 > **Neither Data nor Metadata has to originate from a Java class.**
 
-> **Data is transformable. Model is trustworthy.**
+> **Data is transformable. Model relates semantics to representation.**
 
-> **Data knows representation. Metadata knows semantics. PropertyMapping relates their coordinates.**
+> **Data knows representation. Metadata knows semantics. FieldMapping relates their coordinates.**
+
+> **Data exposes representation structure. Metadata exposes semantic structure. Model relates them; it does not define another structure.**
 
 > **Forma core knows that data has coordinates, not what shape those coordinates have.**
 
-> **PropertyValue owns primitive representation interpretation. Attribute interpretation establishes meaning.**
+> **FieldValue owns primitive representation interpretation. Attribute interpretation establishes meaning.**
 
-> **Property transformations operate on representation. Attribute interpretation establishes meaning.**
+> **Field transformations operate on representation. Attribute interpretation establishes meaning.**
 
 > **An AttributeName identifies an attribute within Metadata, not globally across the application.**
 
 > **Same name is a mapping convention, not a universal representation coordinate.**
 
-> **Binding is not something Metadata does. Binding is how a Model comes into existence.**
+> **Construction establishes object integrity; reading establishes facts about represented data.**
 
-> **A Model either exists in a valid state, or it does not exist.**
+> **A Model is structurally valid by construction; semantic values are established when requested.**
 
 > **Interpret what the application needs; preserve the rest as data.**
 
@@ -978,19 +934,19 @@ Forma avoids requiring a dedicated Java class for every shape of data entering o
 
 Information irrelevant to current decisions can remain encapsulated in its source representation without becoming unnecessary Java fields.
 
-Data may retain properties not currently represented as model attributes, avoiding accidental information loss while also avoiding artificial expansion of the semantic object model.
+Data may retain fields not currently represented as model attributes, avoiding accidental information loss while also avoiding artificial expansion of the semantic object model.
 
-Different physical representations can participate in the same semantic model through different `PropertyMapping` strategies.
+Different physical representations can participate in the same semantic model through different `FieldMapping` strategies.
 
 Partial data becomes a first-class concept rather than an invalid DTO.
 
 Merge, projection, filtering, decoding, decryption, and similar operations can occur at the representation layer before semantic model construction.
 
-Primitive representation conversions are centralized in reusable `PropertyValue` implementations rather than duplicated across every representation-specific `Property`.
+Primitive representation conversions are centralized in reusable `FieldValue` implementations rather than duplicated across every representation-specific `Field`.
 
-Semantic attributes no longer require `instanceof`, representation-specific property types, capability witness objects, or a closed interpreter whose future methods force unrelated attributes to implement impossible cases.
+Semantic attributes no longer require `instanceof`, representation-specific field types, capability witness objects, or a closed interpreter whose future methods force unrelated attributes to implement impossible cases.
 
-The common `PropertyValue` vocabulary becomes an explicit design boundary and must therefore remain deliberately small.
+The common `FieldValue` vocabulary becomes an explicit design boundary and must therefore remain deliberately small.
 
 Metadata becomes reusable semantic knowledge rather than an implementation detail tied to one Java class.
 
@@ -1028,22 +984,22 @@ Forma models the underlying data concepts so focused components can collaborate 
 
 Rejected.
 
-Partial and intermediate information may not yet satisfy a complete semantic structure. `Data` exists independently; successful construction establishes a `Model` associated with `Metadata`.
+Partial and intermediate information may not yet satisfy a complete semantic structure. `Data` exists independently; a `Model` composes it with `Metadata` and a `FieldMapping` to describe semantic values.
 
 ### Metadata owns construction
 
 Rejected.
 
-`Metadata` describes semantics. Model construction establishes that concrete `Data` satisfies those semantics through a particular `PropertyMapping`.
+`Metadata` describes semantics. Model construction composes those semantics with concrete `Data` through a particular `FieldMapping`; value requests establish whether represented state satisfies them.
 
-Putting construction behavior on `Metadata` would conflate description with the act that creates a valid semantic association.
+Putting construction behavior on `Metadata` would conflate semantic description with the composition and reading represented data.
 
 ### Data directly exposes semantic attributes
 
 For example:
 
 ```java
-Property property(AttributeName<?> name);
+Field property(AttributeName<?> name);
 ```
 
 or:
@@ -1054,22 +1010,22 @@ or:
 
 Rejected as the fundamental `Data` API.
 
-A `Data` object must not need to know that it will ever participate in a semantic model. Semantic-to-representation association is supplied separately through `PropertyMapping`.
+A `Data` object must not need to know that it will ever participate in a semantic model. Semantic-to-representation association is supplied separately through `FieldMapping`.
 
 ### Data prescribes lookup as a fundamental method
 
 Rejected.
 
-`Data` is iterable over addressable `Property` objects, so lookup can be represented independently by an object such as `PropertyAt`. This keeps the fundamental representation contract smaller and allows specialized data implementations to optimize internally without changing core semantics.
+`Data` is iterable over addressable `Field` objects, so lookup can be represented independently by an object such as `FieldAt`. This keeps the fundamental representation contract smaller and allows specialized data implementations to optimize internally without changing core semantics.
 
-### Property uses a closed interpreter
+### Field uses a closed interpreter
 
 For example:
 
 ```java
-public interface Property {
+public interface Field {
 
-    <T> T describe(PropertyValue<T> interpreter);
+    <T> T describe(FieldValue<T> interpreter);
 }
 ```
 
@@ -1079,34 +1035,34 @@ Rejected.
 
 Adding a new represented value kind would force every existing specialized interpreter, such as a textual attribute, to implement a method for a value kind it cannot meaningfully consume, usually only to reject it. That makes the interpreter vocabulary a closed sum and spreads unsupported-case methods across semantic classes.
 
-### Representation-specific Property capability interfaces
+### Representation-specific Field capability interfaces
 
 For example:
 
 ```text
-TextProperty
-NumberProperty
+TextField
+NumberField
 ```
 
 combined with casts, `instanceof`, `Class<?>`, or capability witness objects.
 
-Rejected for the core binding boundary.
+Rejected for the core interpretation boundary.
 
 These approaches either couple semantic attributes to runtime type inspection or introduce technical witness objects that do not represent a useful domain concept.
 
-### Property exposes Object
+### Field exposes Object
 
 Rejected because it shifts type interpretation and casts to clients.
 
-### Property has one universal byte or textual representation
+### Field has one universal byte or textual representation
 
 Rejected because it throws away information already available from source-specific representations and may introduce unnecessary serialization and parsing.
 
-### Property conversion logic lives in every concrete Property
+### Field conversion logic lives in every concrete Field
 
 Rejected.
 
-If `JsonStringProperty`, `JdbcVarcharProperty`, and `PojoStringProperty` all implement the same `asText`, `asNumber`, and related conversion logic independently, representation adapters duplicate behavior that belongs to the represented value itself.
+If `JsonStringField`, `JdbcVarcharField`, and `PojoStringField` all implement the same `asText`, `asNumber`, and related conversion logic independently, representation adapters duplicate behavior that belongs to the represented value itself.
 
 Reusable value objects such as `TextValue` and `NumberValue` centralize that behavior.
 
@@ -1124,9 +1080,9 @@ Rejected.
 
 An `AttributeName` identifies an attribute within a metadata context. Context already supplied by `Metadata` must not be redundantly encoded into every attribute name merely to obtain global identity.
 
-### Model may exist in an invalid state
+### Model uses mutable validation state
 
-Rejected. Validity is a construction invariant.
+Rejected. A Model is structurally valid by construction and does not transition from unvalidated to validated. Semantic value requests establish facts about represented state when requested.
 
 ### Data and Model implement output formats directly
 
@@ -1177,13 +1133,13 @@ A more complete architectural statement is:
 
 The following details remain deliberately unresolved:
 
-* which additional primitive interpretations, beyond text and number, belong in the fundamental `PropertyValue` vocabulary;
-* exact conversion and failure semantics for incompatible `PropertyValue` interpretations;
-* concrete `PropertyReference` kinds required by JSON, JDBC, POJO, positional, and other data representations;
-* additional standard `PropertyMapping` strategies beyond the current same-name convention;
-* exact binding failure semantics;
-* missing, optional, and required property semantics;
-* fail-fast versus accumulated binding violations;
+* which additional primitive interpretations, beyond text and number, belong in the fundamental `FieldValue` vocabulary;
+* exact conversion and failure semantics for incompatible `FieldValue` interpretations;
+* concrete `FieldReference` kinds required by JSON, JDBC, POJO, positional, and other data representations;
+* additional standard `FieldMapping` strategies beyond the current same-name convention;
+* exact attribute value failure semantics;
+* missing, optional, and required field semantics;
+* fail-fast versus accumulated semantic violations;
 * the definitive set of primitive `Attribute<T>` implementations and decorators;
 * metadata invariants such as duplicate attribute names;
 * canonical model representation and equality;

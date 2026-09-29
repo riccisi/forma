@@ -1,43 +1,43 @@
 package it.riccisi.forma;
 
+import it.riccisi.forma.attribute.AttributeNameOf;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 final class AttributeNameOfTest {
 
     @Test
     void identifiesEqualNamesByText() {
-        final AttributeName<String> first = new AttributeNameOf<>("email");
-        final AttributeName<String> second = new AttributeNameOf<>("email");
+        assertThat(new AttributeNameOf<String>("email"), equalTo(new AttributeNameOf<>("email")));
+    }
 
-        assertEquals(first, second);
-        assertEquals(first.hashCode(), second.hashCode());
+    @Test
+    void equalNamesHaveEqualHashCodes() {
+        assertThat(
+            new AttributeNameOf<String>("email").hashCode(),
+            equalTo(new AttributeNameOf<String>("email").hashCode())
+        );
     }
 
     @Test
     void distinguishesDifferentNames() {
-        assertNotEquals(
+        assertThat(
             new AttributeNameOf<String>("email"),
-            new AttributeNameOf<String>("name")
+            not(equalTo(new AttributeNameOf<String>("name")))
         );
     }
 
     @Test
     void rejectsBlankName() {
-        assertThrows(
-            IllegalArgumentException.class,
-            () -> new AttributeNameOf<String>("   ")
-        );
+        assertThrows(IllegalArgumentException.class, () -> new AttributeNameOf<String>("   "));
     }
 
     @Test
     void rejectsSurroundingWhitespace() {
-        assertThrows(
-            IllegalArgumentException.class,
-            () -> new AttributeNameOf<String>(" email ")
-        );
+        assertThrows(IllegalArgumentException.class, () -> new AttributeNameOf<String>(" email "));
     }
 }
