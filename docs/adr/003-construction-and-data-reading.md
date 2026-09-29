@@ -10,7 +10,7 @@ Forma objects may represent information they do not own or materialize. A struct
 
 Requiring constructors to read that source confuses two different guarantees: integrity of the object being constructed and facts about represented information at a particular moment.
 
-For example, `FieldAt(reference, data)` can be a valid object even when the referenced field is currently absent. Likewise, an `AttributeValue` can validly represent the value of an attribute in a model before that value is requested.
+For example, `FieldAt(reference, data)` can be a valid object even when the referenced field is currently absent. Likewise, a `Model` can validly relate `Metadata` to `Data` before any semantic value is requested.
 
 ## Decision
 
@@ -24,7 +24,7 @@ Examples include a valid `AttributeName`, a valid positional reference, or a `Mo
 
 Construction does not read represented values merely to prove transient facts about an external or mutable source.
 
-### Model is an instance of Metadata over Data
+### Model relates Metadata to Data
 
 ```java
 new ModelOf(metadata, data, mapping)
@@ -32,30 +32,35 @@ new ModelOf(metadata, data, mapping)
 
 constructs the relationship. It does not interpret every metadata attribute.
 
-`Model` exposes `AttributeValue` objects. Their semantic values are established when `value()` is requested.
+`Data` exposes representation structure through `Field`. `Metadata` exposes semantic structure through `Attribute`. `Model` does not introduce a third iterable structure; it establishes the semantic value requested by name:
 
-```text
-Metadata ─────┐
-Data ─────────┼── Model
-FieldMapping ─┘
-                  │
-                  ▼
-           AttributeValue<T>
-                  │ value()
-                  ▼
-          FieldReference
-                  │
-                  ▼
-               FieldAt
-                  │
-                  ▼
-          Attribute.valueFrom
-                  │
-                  ▼
-                  T
+```java
+<T> T valueOf(AttributeName<T> name);
 ```
 
-> **An Attribute describes a semantic value. An AttributeValue represents that value in a Model.**
+The resolution path is:
+
+```text
+AttributeName<T>
+      │
+      ├───────────────┐
+      ▼               │
+ AttributeAt<T>       │ FieldMapping
+      │               ▼
+      │          FieldReference
+      │               │
+      │               ▼
+      │            FieldAt
+      │               │
+      └──── valueFrom ┘
+              │
+              ▼
+              T
+```
+
+`AttributeAt` models semantic lookup inside `Metadata` just as `FieldAt` models representation lookup inside `Data`.
+
+> **Data exposes representation structure. Metadata exposes semantic structure. Model relates them; it does not define another structure.**
 
 ### Failures use the vocabulary of the abstraction that detects them
 
@@ -69,7 +74,9 @@ RejectedValueException
 
 A `FieldAt` may raise `MissingFieldException`. A represented value may raise `UnparsableValueException` when it cannot provide the requested primitive form. An attribute constraint may raise `RejectedValueException`.
 
-When `AttributeValue.value()` cannot establish its semantic value, `AttributeValueException` adds the semantic `AttributeName` and representation `FieldReference` while preserving the lower-level exception as its cause.
+When `Model.valueOf(...)` cannot establish a semantic value from represented data, `AttributeValueException` adds the semantic `AttributeName` and representation `FieldReference` while preserving the lower-level exception as its cause.
+
+Failure to find the requested semantic attribute in `Metadata` remains an attribute lookup failure rather than being disguised as a represented-data failure.
 
 > **Each abstraction reports failures in its own vocabulary; a higher-level abstraction adds context without erasing the lower-level cause.**
 
@@ -83,9 +90,11 @@ Caching and snapshot semantics are separate capabilities. If stable values over 
 
 Constructing a model does not interpret field values.
 
-Iterating a model or asking an `AttributeValue` for its name does not by itself require its represented field to be read.
+Inspecting `model.metadata()` does not resolve field mappings or represented values.
 
-Requesting one attribute value reads only the information necessary for that value.
+Requesting one value through `Model.valueOf(...)` reads only the information necessary for that semantic value.
+
+Consumers that need model structure inspect `Metadata`; they do not iterate a second collection of model values.
 
 Unused fields remain represented by `Data` without being promoted into semantic Java state.
 
@@ -93,15 +102,31 @@ A constructor guarantees the integrity of the object, not the current state of t
 
 ## Alternatives considered
 
-Eagerly validating every metadata attribute during model construction was rejected because it performs semantic work during construction, reads values that may never be needed, and cannot provide durable validity over mutable data without also capturing a snapshot.
+### Model as Iterable<AttributeValue<?>>
 
-Making `Model` mutable and validating on first use was rejected because demand-driven reading requires no mutable validity state.
+Rejected because it duplicates the structure already exposed by `Metadata`. `AttributeValue` also reduced to a lazy pairing of an attribute name and a value computation rather than carrying an independent domain responsibility.
 
-Universal eager snapshots were rejected because Forma must also represent external, partial, large, streaming, and otherwise non-materialized information.
+Consumers that need to enumerate semantic structure can iterate `model.metadata()` and request only the values they actually need.
+
+### Lookup directly on Metadata
+
+A method such as `Metadata.attribute(name)` was not added to the fundamental contract. Generic lookup is instead represented by `AttributeAt`, preserving the same object-oriented structure used by `FieldAt` over `Data`.
+
+### Eager model validation
+
+Rejected because it performs semantic work during construction, reads values that may never be needed, and cannot provide durable validity over mutable data without also capturing a snapshot.
+
+### Mutable validation state
+
+Rejected because demand-driven reading requires no mutable validity state.
+
+### Universal eager snapshots
+
+Rejected because Forma must also represent external, partial, large, streaming, and otherwise non-materialized information.
 
 ## Relationship to ADR-001
 
-ADR-001 establishes `Data` as first-class represented information and `Metadata` as first-class semantic knowledge. This ADR specifies when represented information is read.
+ADR-001 establishes `Data` as first-class represented information and `Metadata` as first-class semantic knowledge. This ADR specifies when represented information is read and clarifies that `Model` is their semantic relationship rather than a third structural collection.
 
 The fundamental separation is:
 
