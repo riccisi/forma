@@ -1,12 +1,12 @@
 package it.riccisi.forma.attribute;
 
 import it.riccisi.forma.Attribute;
-import it.riccisi.forma.Property;
+import it.riccisi.forma.Field;
 
 /**
- * Base attribute for semantic values interpreted from numeric property values.
+ * Base attribute for semantic values interpreted from numeric field values.
  *
- * <p>The property value owns representation-level numeric interpretation, while
+ * <p>The field value owns representation-level numeric interpretation, while
  * the attribute establishes the semantic meaning and validity of that number.
  *
  * @param <T> semantic value type
@@ -14,8 +14,8 @@ import it.riccisi.forma.Property;
 public abstract class NumberAttribute<T> implements Attribute<T> {
 
     @Override
-    public final T valueFrom(final Property property) {
-        return this.interpret(property.value().asNumber());
+    public final T valueFrom(final Field field) {
+        return this.interpret(field.value().asNumber());
     }
 
     /**
