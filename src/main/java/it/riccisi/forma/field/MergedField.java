@@ -31,7 +31,7 @@ public final class MergedField implements Field {
     public FieldValue value() {
         return new FieldAt(
             this.reference,
-            new Joined<>(this.overlay, this.base)
+            new Joined<Field>(this.overlay, this.base)
         ).value();
     }
 }
