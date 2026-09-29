@@ -118,10 +118,9 @@ final class AttributeValueExceptionContractTest {
 
         private Object value() {
             return new ModelOf(
-                    new MetadataOf(this.attribute),
-                    this.data,
-                    ignored -> this.reference
-                )
+                new MetadataOf(this.attribute),
+                this.data,
+                ignored -> this.reference
             ).valueOf(this.attribute.name());
         }
     }
