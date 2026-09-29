@@ -1,14 +1,14 @@
 package it.riccisi.forma;
 
-import it.riccisi.forma.observation.RejectedValue;
-import it.riccisi.forma.observation.UninterpretableValue;
+import it.riccisi.forma.exception.RejectedValueException;
+import it.riccisi.forma.exception.UnparsableValueException;
 import it.riccisi.forma.attribute.AttributeNameOf;
 import it.riccisi.forma.attribute.IntegerAttribute;
 import it.riccisi.forma.attribute.NonBlankAttribute;
 import it.riccisi.forma.attribute.StringAttribute;
-import it.riccisi.forma.property.NumberValue;
-import it.riccisi.forma.property.TextValue;
-import it.riccisi.forma.property.ValueProperty;
+import it.riccisi.forma.field.NumberValue;
+import it.riccisi.forma.field.TextValue;
+import it.riccisi.forma.field.FieldOf;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -29,7 +29,7 @@ final class PrimitiveAttributeContractTest {
             new StringAttribute(
                 new AttributeNameOf<>("name")
             ).valueFrom(
-                new ValueProperty(new Reference(), new TextValue(new TextOf("Ada")))
+                new FieldOf(new Reference(), new TextValue(new TextOf("Ada")))
             ),
             equalTo("Ada")
         );
@@ -41,7 +41,7 @@ final class PrimitiveAttributeContractTest {
             new NonBlankAttribute(
                 new StringAttribute(new AttributeNameOf<>("name"))
             ).valueFrom(
-                new ValueProperty(new Reference(), new TextValue(new TextOf("Ada")))
+                new FieldOf(new Reference(), new TextValue(new TextOf("Ada")))
             ),
             equalTo("Ada")
         );
@@ -50,11 +50,11 @@ final class PrimitiveAttributeContractTest {
     @Test
     void rejectsValueThroughSemanticConstraint() {
         assertThrows(
-            RejectedValue.class,
+            RejectedValueException.class,
             () -> new NonBlankAttribute(
                 new StringAttribute(new AttributeNameOf<>("name"))
             ).valueFrom(
-                new ValueProperty(
+                new FieldOf(
                     new Reference(),
                     new TextValue(new TextOf("   "))
                 )
@@ -66,7 +66,7 @@ final class PrimitiveAttributeContractTest {
     void bindsIntegerFromNumericRepresentation() {
         assertThat(
             new IntegerAttribute(new AttributeNameOf<>("age")).valueFrom(
-                new ValueProperty(new Reference(), new NumberValue(42))
+                new FieldOf(new Reference(), new NumberValue(42))
             ),
             is(42)
         );
@@ -76,7 +76,7 @@ final class PrimitiveAttributeContractTest {
     void bindsIntegerFromConvertibleTextRepresentation() {
         assertThat(
             new IntegerAttribute(new AttributeNameOf<>("age")).valueFrom(
-                new ValueProperty(
+                new FieldOf(
                     new Reference(),
                     new TextValue(new TextOf("42"))
                 )
@@ -88,11 +88,11 @@ final class PrimitiveAttributeContractTest {
     @Test
     void rejectsNonIntegralNumberAsIntegerSemantics() {
         assertThrows(
-            UninterpretableValue.class,
+            UnparsableValueException.class,
             () -> new IntegerAttribute(
                 new AttributeNameOf<>("age")
             ).valueFrom(
-                new ValueProperty(new Reference(), new NumberValue(42.5))
+                new FieldOf(new Reference(), new NumberValue(42.5))
             )
         );
     }
@@ -100,11 +100,11 @@ final class PrimitiveAttributeContractTest {
     @Test
     void rejectsIntegerOutsideJavaRange() {
         assertThrows(
-            UninterpretableValue.class,
+            UnparsableValueException.class,
             () -> new IntegerAttribute(
                 new AttributeNameOf<>("age")
             ).valueFrom(
-                new ValueProperty(
+                new FieldOf(
                     new Reference(),
                     new TextValue(new TextOf("2147483648"))
                 )
@@ -115,11 +115,11 @@ final class PrimitiveAttributeContractTest {
     @Test
     void rejectsTextThatCannotBeInterpretedAsInteger() {
         assertThrows(
-            UninterpretableValue.class,
+            UnparsableValueException.class,
             () -> new IntegerAttribute(
                 new AttributeNameOf<>("age")
             ).valueFrom(
-                new ValueProperty(
+                new FieldOf(
                     new Reference(),
                     new TextValue(new TextOf("forty-two"))
                 )
@@ -127,6 +127,6 @@ final class PrimitiveAttributeContractTest {
         );
     }
 
-    private record Reference() implements PropertyReference {
+    private record Reference() implements FieldReference {
     }
 }
