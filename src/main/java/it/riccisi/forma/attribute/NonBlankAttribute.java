@@ -2,8 +2,8 @@ package it.riccisi.forma.attribute;
 
 import it.riccisi.forma.Attribute;
 import it.riccisi.forma.AttributeName;
-import it.riccisi.forma.Property;
-import it.riccisi.forma.observation.RejectedValue;
+import it.riccisi.forma.Field;
+import it.riccisi.forma.exception.RejectedValueException;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
@@ -24,10 +24,10 @@ public final class NonBlankAttribute implements Attribute<String> {
     }
 
     @Override
-    public String valueFrom(final Property property) {
-        final String value = this.origin.valueFrom(property);
+    public String valueFrom(final Field field) {
+        final String value = this.origin.valueFrom(field);
         if (value.isBlank()) {
-            throw new RejectedValue("The semantic string cannot be blank");
+            throw new RejectedValueException("The semantic string cannot be blank");
         }
         return value;
     }
