@@ -241,7 +241,7 @@ Forma should:
 * allow data to be transformed and composed before assigning business meaning;
 * separate representation concerns from semantic structure and validation;
 * avoid representation-specific casts or type inspection in semantic attributes;
-* make object integrity a construction invariant while establishing semantic validity through observation;
+* make object integrity a construction invariant while establishing semantic values when requested;
 * enable object composition instead of procedural mapping pipelines;
 * allow capabilities to emerge through focused object composition rather than centralized procedural descriptors;
 * make common data-oriented application concerns reusable once their semantics have been modeled;
@@ -288,7 +288,7 @@ public interface Data extends Iterable<Field> {
 
 A `Data` may be complete, partial, projected, merged, filtered, dynamically backed by another source, or unrelated to any known business model.
 
-Each iterated `Field` carries its own representation coordinate. Lookup is therefore derivable from observation and does not need to be prescribed by the fundamental `Data` contract.
+Each iterated `Field` carries its own representation coordinate. Lookup is therefore derivable from iteration and does not need to be prescribed by the fundamental `Data` contract.
 
 A generic locating object can express that operation independently:
 
@@ -920,7 +920,7 @@ Data / Metadata / Model ─┼── CRUD
 
 > **Construction establishes object integrity; reading establishes facts about represented data.**
 
-> **A Model always satisfies its structural invariants; semantic validity is established by its observations.**
+> **A Model is structurally valid by construction; semantic values are established when requested.**
 
 > **Interpret what the application needs; preserve the rest as data.**
 
@@ -1046,7 +1046,7 @@ NumberField
 
 combined with casts, `instanceof`, `Class<?>`, or capability witness objects.
 
-Rejected for the core binding boundary.
+Rejected for the core interpretation boundary.
 
 These approaches either couple semantic attributes to runtime type inspection or introduce technical witness objects that do not represent a useful domain concept.
 
