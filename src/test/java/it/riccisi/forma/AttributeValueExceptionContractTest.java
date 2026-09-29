@@ -12,7 +12,6 @@ import it.riccisi.forma.exception.UnparsableValueException;
 import it.riccisi.forma.field.NamedReference;
 import it.riccisi.forma.field.TextValue;
 import it.riccisi.forma.metadata.MetadataOf;
-import it.riccisi.forma.model.AttributeValueAt;
 import it.riccisi.forma.model.ModelOf;
 import java.util.Map;
 import org.cactoos.text.TextOf;
@@ -118,14 +117,12 @@ final class AttributeValueExceptionContractTest {
         }
 
         private Object value() {
-            return new AttributeValueAt<>(
-                this.attribute.name(),
-                new ModelOf(
+            return new ModelOf(
                     new MetadataOf(this.attribute),
                     this.data,
                     ignored -> this.reference
                 )
-            ).value();
+            ).valueOf(this.attribute.name());
         }
     }
 }
