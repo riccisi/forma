@@ -255,7 +255,7 @@ Forma introduces the following core abstractions:
 ```text
 Data
 FieldReference
-Property
+Field
 FieldValue
 Attribute<T>
 AttributeName<T>
@@ -282,7 +282,7 @@ successful semantic interpretation
 The fundamental contract is intentionally small:
 
 ```java
-public interface Data extends Iterable<Property> {
+public interface Data extends Iterable<Field> {
 }
 ```
 
@@ -375,12 +375,12 @@ POJO member
 
 Forma core knows that data has coordinates, not what shape those coordinates have.
 
-### Property
+### Field
 
 A `Field` is an addressable, individually interpretable portion of represented data.
 
 ```java
-public interface Property {
+public interface Field {
 
     FieldReference reference();
 
@@ -435,7 +435,7 @@ NumberValue(42).asText()     -> "42"
 
 A conversion is valid when the represented information admits that interpretation. A textual value containing a valid number may therefore legitimately provide `asNumber()`. A textual value that cannot be interpreted numerically fails at that representation boundary.
 
-This centralizes primitive conversion logic in reusable value objects instead of repeating it in every `JsonProperty`, `JdbcProperty`, `PojoProperty`, or other concrete `Field` implementation.
+This centralizes primitive conversion logic in reusable value objects instead of repeating it in every `JsonField`, `JdbcField`, `PojoField`, or other concrete `Field` implementation.
 
 The common vocabulary must remain representation-level. It must not contain business concepts such as:
 
@@ -447,16 +447,16 @@ StudentId
 
 Those belong to semantic interpretation.
 
-### Property transformations
+### Field transformations
 
 Because `Field` encapsulates representation, decorators can transform representation without involving business semantics.
 
 Possible examples include:
 
 ```text
-DecryptedProperty
-DecodedProperty
-DecompressedProperty
+DecryptedField
+DecodedField
+DecompressedField
 ```
 
 Conceptually:
@@ -464,7 +464,7 @@ Conceptually:
 ```text
 physical representation
         ↓
-Property decorator
+Field decorator
         ↓
 FieldValue
         ↓
@@ -475,7 +475,7 @@ semantic value
 
 This establishes:
 
-> **Property transformations operate on representation. Attribute interpretation establishes meaning.**
+> **Field transformations operate on representation. Attribute interpretation establishes meaning.**
 
 ### Attribute
 
@@ -486,7 +486,7 @@ public interface Attribute<T> {
 
     AttributeName<T> name();
 
-    T valueFrom(Property property);
+    T valueFrom(Field property);
 }
 ```
 
@@ -644,7 +644,7 @@ FieldReference
    ↓
 FieldAt(reference, Data)
    ↓
-Attribute.from(Property)
+Attribute.valueFrom(Field)
    ↓
 AttributeValue
    ↓
@@ -655,13 +655,13 @@ This keeps addressing and interpretation as separate concerns:
 
 ```text
 addressing:
-AttributeName -> FieldReference -> Property
+AttributeName -> FieldReference -> Field
 
 interpretation:
-Property -> FieldValue -> semantic value
+Field -> FieldValue -> semantic value
 ```
 
-Property lookup therefore does not imply textual name equality. A semantic `email` may map to JSON field `e_mail_address`, while a semantic `birthDate` may map to position 7 in a positional representation.
+Field lookup therefore does not imply textual name equality. A semantic `email` may map to JSON field `e_mail_address`, while a semantic `birthDate` may map to position 7 in a positional representation.
 
 Representation coordinates and semantic attribute names remain separate concepts.
 
@@ -943,7 +943,7 @@ Data / Metadata / Model ─┼── CRUD
 
 > **FieldValue owns primitive representation interpretation. Attribute interpretation establishes meaning.**
 
-> **Property transformations operate on representation. Attribute interpretation establishes meaning.**
+> **Field transformations operate on representation. Attribute interpretation establishes meaning.**
 
 > **An AttributeName identifies an attribute within Metadata, not globally across the application.**
 
@@ -1030,7 +1030,7 @@ Putting construction behavior on `Metadata` would conflate semantic description 
 For example:
 
 ```java
-Property property(AttributeName<?> name);
+Field property(AttributeName<?> name);
 ```
 
 or:
@@ -1049,12 +1049,12 @@ Rejected.
 
 `Data` is iterable over addressable `Field` objects, so lookup can be represented independently by an object such as `FieldAt`. This keeps the fundamental representation contract smaller and allows specialized data implementations to optimize internally without changing core semantics.
 
-### Property uses a closed interpreter
+### Field uses a closed interpreter
 
 For example:
 
 ```java
-public interface Property {
+public interface Field {
 
     <T> T describe(FieldValue<T> interpreter);
 }
@@ -1066,13 +1066,13 @@ Rejected.
 
 Adding a new represented value kind would force every existing specialized interpreter, such as a textual attribute, to implement a method for a value kind it cannot meaningfully consume, usually only to reject it. That makes the interpreter vocabulary a closed sum and spreads unsupported-case methods across semantic classes.
 
-### Representation-specific Property capability interfaces
+### Representation-specific Field capability interfaces
 
 For example:
 
 ```text
-TextProperty
-NumberProperty
+TextField
+NumberField
 ```
 
 combined with casts, `instanceof`, `Class<?>`, or capability witness objects.
@@ -1081,19 +1081,19 @@ Rejected for the core binding boundary.
 
 These approaches either couple semantic attributes to runtime type inspection or introduce technical witness objects that do not represent a useful domain concept.
 
-### Property exposes Object
+### Field exposes Object
 
 Rejected because it shifts type interpretation and casts to clients.
 
-### Property has one universal byte or textual representation
+### Field has one universal byte or textual representation
 
 Rejected because it throws away information already available from source-specific representations and may introduce unnecessary serialization and parsing.
 
-### Property conversion logic lives in every concrete Property
+### Field conversion logic lives in every concrete Field
 
 Rejected.
 
-If `JsonStringProperty`, `JdbcVarcharProperty`, and `PojoStringProperty` all implement the same `asText`, `asNumber`, and related conversion logic independently, representation adapters duplicate behavior that belongs to the represented value itself.
+If `JsonStringField`, `JdbcVarcharField`, and `PojoStringField` all implement the same `asText`, `asNumber`, and related conversion logic independently, representation adapters duplicate behavior that belongs to the represented value itself.
 
 Reusable value objects such as `TextValue` and `NumberValue` centralize that behavior.
 
