@@ -4,10 +4,10 @@ import it.riccisi.forma.attribute.AttributeNameOf;
 import it.riccisi.forma.attribute.StringAttribute;
 import it.riccisi.forma.data.DataOf;
 import it.riccisi.forma.metadata.MetadataOf;
-import it.riccisi.forma.model.AttributeOf;
+import it.riccisi.forma.model.AttributeValueAt;
 import it.riccisi.forma.model.ModelOf;
-import it.riccisi.forma.property.NamedReference;
-import it.riccisi.forma.property.ValueProperty;
+import it.riccisi.forma.field.NamedReference;
+import it.riccisi.forma.field.FieldOf;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -41,7 +41,7 @@ final class ModelObservationContractTest {
     }
 
     @Test
-    void valueInterpretsOnlyObservedProperty() {
+    void valueReadsOnlyRequestedField() {
         assertThat(new ObservedModel().value(), is("ACTIVE:0:1"));
     }
 
@@ -62,8 +62,8 @@ final class ModelObservationContractTest {
                     new StringAttribute(new AttributeNameOf<>("status"))
                 ),
                 new DataOf(
-                    new ValueProperty(new NamedReference("id"), this.id),
-                    new ValueProperty(new NamedReference("status"), this.status)
+                    new FieldOf(new NamedReference("id"), this.id),
+                    new FieldOf(new NamedReference("status"), this.status)
                 ),
                 new CountingMapping(this.mappings)
             );
@@ -84,7 +84,7 @@ final class ModelObservationContractTest {
         }
 
         String value() {
-            final String value = new AttributeOf<String>(
+            final String value = new AttributeValueAt<String>(
                 new AttributeNameOf<>("status"),
                 this.model
             ).value();
@@ -97,7 +97,7 @@ final class ModelObservationContractTest {
         }
     }
 
-    private static final class CountingMapping implements PropertyMapping {
+    private static final class CountingMapping implements FieldMapping {
 
         private final AtomicInteger calls;
 
@@ -106,13 +106,13 @@ final class ModelObservationContractTest {
         }
 
         @Override
-        public PropertyReference property(final AttributeName<?> attribute) {
+        public FieldReference property(final AttributeName<?> attribute) {
             this.calls.incrementAndGet();
             return new NamedReference(new UncheckedText(attribute).asString());
         }
     }
 
-    private static final class CountingValue implements PropertyValue {
+    private static final class CountingValue implements FieldValue {
 
         private final Text origin;
         private final AtomicInteger observations;
