@@ -13,11 +13,11 @@ import it.riccisi.forma.attribute.TextAttribute;
 import it.riccisi.forma.data.DataOf;
 import it.riccisi.forma.mapping.ExplicitMapping;
 import it.riccisi.forma.metadata.MetadataOf;
-import it.riccisi.forma.property.NamedReference;
-import it.riccisi.forma.model.AttributeOf;
+import it.riccisi.forma.field.NamedReference;
+import it.riccisi.forma.model.AttributeValueAt;
 import it.riccisi.forma.model.ModelOf;
-import it.riccisi.forma.property.NumberValue;
-import it.riccisi.forma.property.TextValue;
+import it.riccisi.forma.field.NumberValue;
+import it.riccisi.forma.field.TextValue;
 import org.cactoos.Text;
 import org.cactoos.text.TextOf;
 import org.junit.jupiter.api.Test;
@@ -25,30 +25,30 @@ import org.junit.jupiter.api.Test;
 final class ModelContractTest {
 
     @Test
-    void interpretsJsonProperty() {
+    void interpretsJsonField() {
         assertThat(
             new EmailAttribute(new AttributeNameOf<>("email")).valueFrom(
-                new JsonStringProperty(new NamedReference("email"), "alice@example.com")
+                new JsonStringField(new NamedReference("email"), "alice@example.com")
             ).toString(),
             equalTo("alice@example.com")
         );
     }
 
     @Test
-    void interpretsMapProperty() {
+    void interpretsMapField() {
         assertThat(
             new EmailAttribute(new AttributeNameOf<>("email")).valueFrom(
-                new MapStringProperty(new NamedReference("email"), "bob@example.com")
+                new MapStringField(new NamedReference("email"), "bob@example.com")
             ).toString(),
             equalTo("bob@example.com")
         );
     }
 
     @Test
-    void interpretsPojoProperty() {
+    void interpretsPojoField() {
         assertThat(
             new EmailAttribute(new AttributeNameOf<>("email")).valueFrom(
-                new PojoStringProperty(new NamedReference("email"), "carol@example.com")
+                new PojoStringField(new NamedReference("email"), "carol@example.com")
             ).toString(),
             equalTo("carol@example.com")
         );
@@ -102,10 +102,10 @@ final class ModelContractTest {
 
         private EmailModel() {
             this.name = new AttributeNameOf<>("email");
-            final PropertyReference field = new NamedReference("e_mail");
+            final FieldReference field = new NamedReference("e_mail");
             this.metadata = new MetadataOf(new EmailAttribute(this.name));
             this.data = new DataOf(
-                new JsonStringProperty(field, "alice@example.com")
+                new JsonStringField(field, "alice@example.com")
             );
             this.model = new ModelOf(
                 this.metadata,
@@ -115,7 +115,7 @@ final class ModelContractTest {
         }
 
         String email() {
-            return new AttributeOf<Email>(
+            return new AttributeValueAt<Email>(
                 new AttributeNameOf<>("email"), this.model
             ).value().toString();
         }
@@ -133,53 +133,53 @@ final class ModelContractTest {
         }
     }
 
-    private record JsonStringProperty(
-        PropertyReference reference,
+    private record JsonStringField(
+        FieldReference reference,
         Text text
-    ) implements Property {
-        private JsonStringProperty(
-            final PropertyReference reference,
+    ) implements Field {
+        private JsonStringField(
+            final FieldReference reference,
             final String text
         ) {
             this(reference, new TextOf(text));
         }
 
         @Override
-        public PropertyValue value() {
+        public FieldValue value() {
             return new TextValue(this.text);
         }
     }
 
-    private record MapStringProperty(
-        PropertyReference reference,
+    private record MapStringField(
+        FieldReference reference,
         Text text
-    ) implements Property {
-        private MapStringProperty(
-            final PropertyReference reference,
+    ) implements Field {
+        private MapStringField(
+            final FieldReference reference,
             final String text
         ) {
             this(reference, new TextOf(text));
         }
 
         @Override
-        public PropertyValue value() {
+        public FieldValue value() {
             return new TextValue(this.text);
         }
     }
 
-    private record PojoStringProperty(
-        PropertyReference reference,
+    private record PojoStringField(
+        FieldReference reference,
         Text text
-    ) implements Property {
-        private PojoStringProperty(
-            final PropertyReference reference,
+    ) implements Field {
+        private PojoStringField(
+            final FieldReference reference,
             final String text
         ) {
             this(reference, new TextOf(text));
         }
 
         @Override
-        public PropertyValue value() {
+        public FieldValue value() {
             return new TextValue(this.text);
         }
     }
