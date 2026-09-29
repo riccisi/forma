@@ -6,10 +6,10 @@ import it.riccisi.forma.data.DataOf;
 import it.riccisi.forma.mapping.SameNameMapping;
 import it.riccisi.forma.metadata.MetadataOf;
 import it.riccisi.forma.model.ModelOf;
-import it.riccisi.forma.property.NamedReference;
-import it.riccisi.forma.property.PropertyAt;
-import it.riccisi.forma.property.TextValue;
-import it.riccisi.forma.property.ValueProperty;
+import it.riccisi.forma.field.NamedReference;
+import it.riccisi.forma.field.FieldAt;
+import it.riccisi.forma.field.TextValue;
+import it.riccisi.forma.field.FieldOf;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.StreamSupport;
 import org.cactoos.Text;
@@ -65,15 +65,15 @@ final class UnusedDataContractTest {
 
         private UnusedPropertyScenario() {
             this.observed = new AtomicBoolean();
-            final PropertyReference description = new NamedReference("description");
+            final FieldReference description = new NamedReference("description");
             this.data = new DataOf(
-                new ValueProperty(
+                new FieldOf(
                     new NamedReference("id"), new TextValue(new TextOf("42"))
                 ),
-                new ValueProperty(
+                new FieldOf(
                     new NamedReference("status"), new TextValue(new TextOf("ACTIVE"))
                 ),
-                new ValueProperty(
+                new FieldOf(
                     description,
                     new ObservedValue(
                         new TextValue(new TextOf("Preserved source data")),
@@ -101,7 +101,7 @@ final class UnusedDataContractTest {
 
         String description() {
             return new UncheckedText(
-                new PropertyAt(new NamedReference("description"), this.model.data())
+                new FieldAt(new NamedReference("description"), this.model.data())
                     .value().asText()
             ).asString();
         }
@@ -112,12 +112,12 @@ final class UnusedDataContractTest {
         }
     }
 
-    private static final class ObservedValue implements PropertyValue {
+    private static final class ObservedValue implements FieldValue {
 
-        private final PropertyValue origin;
+        private final FieldValue origin;
         private final AtomicBoolean observed;
 
-        private ObservedValue(final PropertyValue origin, final AtomicBoolean observed) {
+        private ObservedValue(final FieldValue origin, final AtomicBoolean observed) {
             this.origin = origin;
             this.observed = observed;
         }
