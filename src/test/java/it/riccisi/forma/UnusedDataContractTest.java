@@ -59,12 +59,12 @@ final class UnusedDataContractTest {
 
     private static final class UnusedFieldScenario {
 
-        private final AtomicBoolean observed;
+        private final AtomicBoolean read;
         private final Data data;
         private final Model model;
 
         private UnusedFieldScenario() {
-            this.observed = new AtomicBoolean();
+            this.read = new AtomicBoolean();
             final FieldReference description = new NamedReference("description");
             this.data = new DataOf(
                 new FieldOf(
@@ -75,9 +75,9 @@ final class UnusedDataContractTest {
                 ),
                 new FieldOf(
                     description,
-                    new ObservedValue(
+                    new ReadValue(
                         new TextValue(new TextOf("Preserved source data")),
-                        this.observed
+                        this.read
                     )
                 )
             );
@@ -92,7 +92,7 @@ final class UnusedDataContractTest {
         }
 
         boolean interpreted() {
-            return this.observed.get();
+            return this.read.get();
         }
 
         long attributeCount() {
@@ -112,25 +112,25 @@ final class UnusedDataContractTest {
         }
     }
 
-    private static final class ObservedValue implements FieldValue {
+    private static final class ReadValue implements FieldValue {
 
         private final FieldValue origin;
-        private final AtomicBoolean observed;
+        private final AtomicBoolean read;
 
-        private ObservedValue(final FieldValue origin, final AtomicBoolean observed) {
+        private ReadValue(final FieldValue origin, final AtomicBoolean read) {
             this.origin = origin;
-            this.observed = observed;
+            this.read = read;
         }
 
         @Override
         public Text asText() {
-            this.observed.set(true);
+            this.read.set(true);
             return this.origin.asText();
         }
 
         @Override
         public Number asNumber() {
-            this.observed.set(true);
+            this.read.set(true);
             return this.origin.asNumber();
         }
     }
