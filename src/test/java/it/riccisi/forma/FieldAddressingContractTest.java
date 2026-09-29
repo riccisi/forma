@@ -6,7 +6,6 @@ import it.riccisi.forma.data.DataOf;
 import it.riccisi.forma.mapping.ExplicitMapping;
 import it.riccisi.forma.mapping.SameNameMapping;
 import it.riccisi.forma.metadata.MetadataOf;
-import it.riccisi.forma.model.AttributeValueAt;
 import it.riccisi.forma.model.ModelOf;
 import it.riccisi.forma.field.NamedReference;
 import it.riccisi.forma.field.TextValue;
@@ -34,9 +33,7 @@ final class FieldAddressingContractTest {
     void sameNameConventionDerivesRepresentationReference() {
         final AttributeName<String> email = new AttributeNameOf<>("email");
         assertThat(
-            new AttributeValueAt<>(
-                email,
-                new ModelOf(
+            new ModelOf(
                     new MetadataOf(new StringAttribute(email)),
                     new DataOf(
                         new FieldOf(
@@ -45,8 +42,7 @@ final class FieldAddressingContractTest {
                         )
                     ),
                     new SameNameMapping(NamedReference::new)
-                )
-            ).value(),
+                ).valueOf(email),
             equalTo("alice@example.com")
         );
     }
@@ -115,7 +111,7 @@ final class FieldAddressingContractTest {
         }
 
         String value() {
-            return new AttributeValueAt<>(this.email, this.model).value();
+            return this.model.valueOf(this.email);
         }
     }
 
@@ -143,11 +139,11 @@ final class FieldAddressingContractTest {
         }
 
         String first() {
-            return new AttributeValueAt<>(this.email, this.firstModel).value();
+            return this.firstModel.valueOf(this.email);
         }
 
         String second() {
-            return new AttributeValueAt<>(this.email, this.secondModel).value();
+            return this.secondModel.valueOf(this.email);
         }
     }
 }
