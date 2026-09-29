@@ -4,11 +4,17 @@ import it.riccisi.forma.Data;
 import it.riccisi.forma.Field;
 import it.riccisi.forma.FieldReference;
 import it.riccisi.forma.FieldValue;
-import it.riccisi.forma.exception.MissingFieldException;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.cactoos.iterable.Joined;
 
-/** Field at one coordinate of two composed data representations. */
+/**
+ * Field at one coordinate of two composed data representations.
+ *
+ * <p>The overlay precedes the base in the ordered source of candidate fields.
+ * Addressing stops at the first field representing this coordinate, so neither
+ * source value is read until {@link #value()} is requested.
+ */
 @RequiredArgsConstructor
 public final class MergedField implements Field {
 
@@ -23,12 +29,9 @@ public final class MergedField implements Field {
 
     @Override
     public FieldValue value() {
-        Field field = new FieldAt(this.reference, this.overlay);
-        try {
-            field.reference();
-        } catch (final MissingFieldException missing) {
-            field = new FieldAt(this.reference, this.base);
-        }
-        return field.value();
+        return new FieldAt(
+            this.reference,
+            new Joined<>(this.overlay, this.base)
+        ).value();
     }
 }
