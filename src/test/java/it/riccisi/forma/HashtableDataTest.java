@@ -1,13 +1,13 @@
 package it.riccisi.forma;
 
-import it.riccisi.forma.observation.MissingProperty;
+import it.riccisi.forma.exception.MissingFieldException;
 import it.riccisi.forma.attribute.AttributeNameOf;
 import it.riccisi.forma.data.HashtableData;
 import it.riccisi.forma.mapping.ExplicitMapping;
-import it.riccisi.forma.property.NamedReference;
-import it.riccisi.forma.property.NumberValue;
-import it.riccisi.forma.property.PropertyAt;
-import it.riccisi.forma.property.TextValue;
+import it.riccisi.forma.field.NamedReference;
+import it.riccisi.forma.field.NumberValue;
+import it.riccisi.forma.field.FieldAt;
+import it.riccisi.forma.field.TextValue;
 import java.util.Map;
 import java.util.stream.StreamSupport;
 import org.cactoos.text.TextOf;
@@ -21,10 +21,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 final class HashtableDataTest {
 
     @Test
-    void resolvesTextThroughPropertyAt() {
+    void resolvesTextThroughFieldAt() {
         assertThat(
             new UncheckedText(
-                new PropertyAt(
+                new FieldAt(
                     new NamedReference("name"),
                     new HashtableData(Map.of(
                         new NamedReference("name"), new TextValue(new TextOf("Alice")),
@@ -37,9 +37,9 @@ final class HashtableDataTest {
     }
 
     @Test
-    void resolvesNumberThroughPropertyAt() {
+    void resolvesNumberThroughFieldAt() {
         assertThat(
-            new PropertyAt(
+            new FieldAt(
                 new PositionalReference(1),
                 new HashtableData(Map.of(
                     new NamedReference("name"), new TextValue(new TextOf("Alice")),
@@ -51,14 +51,14 @@ final class HashtableDataTest {
     }
 
     @Test
-    void participatesInThePropertyMappingProtocol() {
+    void participatesInTheFieldMappingProtocol() {
         assertThat(
             new UncheckedText(
-                new PropertyAt(
+                new FieldAt(
                     new ExplicitMapping(
                         Map.of(new AttributeNameOf<String>("email"),
                             new NamedReference("e_mail_address"))
-                    ).property(new AttributeNameOf<String>("email")),
+                    ).reference(new AttributeNameOf<String>("email")),
                     new HashtableData(Map.of(
                         new NamedReference("e_mail_address"),
                         new TextValue(new TextOf("alice@example.com"))
@@ -70,7 +70,7 @@ final class HashtableDataTest {
     }
 
     @Test
-    void propertiesCarryTheirRepresentationCoordinates() {
+    void fieldsCarryTheirRepresentationCoordinates() {
         assertThat(
             new HashtableData(Map.of(
                 new NamedReference("status"), new TextValue(new TextOf("ACTIVE"))
@@ -80,7 +80,7 @@ final class HashtableDataTest {
     }
 
     @Test
-    void preservesUnconsumedProperties() {
+    void preservesUnconsumedFields() {
         assertThat(
             StreamSupport.stream(
                 new HashtableData(Map.of(
@@ -94,10 +94,10 @@ final class HashtableDataTest {
     }
 
     @Test
-    void preservesFirstUnconsumedPropertyValue() {
+    void preservesFirstUnconsumedFieldValue() {
         assertThat(
             new UncheckedText(
-                new PropertyAt(
+                new FieldAt(
                     new NamedReference("status"),
                     new HashtableData(Map.of(
                         new NamedReference("status"), new TextValue(new TextOf("ACTIVE")),
@@ -111,10 +111,10 @@ final class HashtableDataTest {
     }
 
     @Test
-    void preservesSecondUnconsumedPropertyValue() {
+    void preservesSecondUnconsumedFieldValue() {
         assertThat(
             new UncheckedText(
-                new PropertyAt(
+                new FieldAt(
                     new NamedReference("description"),
                     new HashtableData(Map.of(
                         new NamedReference("status"), new TextValue(new TextOf("ACTIVE")),
@@ -128,15 +128,15 @@ final class HashtableDataTest {
     }
 
     @Test
-    void propertyAtFailsWhenReferenceIsAbsent() {
+    void fieldAtFailsWhenReferenceIsAbsent() {
         assertThrows(
-            MissingProperty.class,
-            () -> new PropertyAt(
+            MissingFieldException.class,
+            () -> new FieldAt(
                 new NamedReference("missing"), new HashtableData(Map.of())
             ).value()
         );
     }
 
-    private record PositionalReference(int value) implements PropertyReference {
+    private record PositionalReference(int value) implements FieldReference {
     }
 }
