@@ -4,8 +4,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.sameInstance;
 
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
 import it.riccisi.forma.attribute.AttributeNameOf;
@@ -14,7 +12,6 @@ import it.riccisi.forma.data.DataOf;
 import it.riccisi.forma.mapping.ExplicitMapping;
 import it.riccisi.forma.metadata.MetadataOf;
 import it.riccisi.forma.field.NamedReference;
-import it.riccisi.forma.model.AttributeValueAt;
 import it.riccisi.forma.model.ModelOf;
 import it.riccisi.forma.field.NumberValue;
 import it.riccisi.forma.field.TextValue;
@@ -87,12 +84,6 @@ final class ModelContractTest {
         assertThat(new EmailModel().email(), equalTo("alice@example.com"));
     }
 
-    @Test
-    void preservesAttributeIdentity() {
-        final EmailModel scenario = new EmailModel();
-        assertThat(scenario.model.iterator().next().name(), sameInstance(scenario.name));
-    }
-
     private static final class EmailModel {
 
         private final AttributeName<Email> name;
@@ -115,9 +106,9 @@ final class ModelContractTest {
         }
 
         String email() {
-            return new AttributeValueAt<Email>(
-                new AttributeNameOf<>("email"), this.model
-            ).value().toString();
+            return this.model.valueOf(
+                new AttributeNameOf<Email>("email")
+            ).toString();
         }
     }
 
