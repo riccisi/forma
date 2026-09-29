@@ -261,7 +261,7 @@ Attribute<T>
 AttributeName<T>
 FieldMapping
 Metadata
-AttributeValue<T>
+T
 Model
 ```
 
@@ -519,7 +519,7 @@ NonBlankAttribute
 
 The important boundary is that primitive attributes interpret representation while attribute decorators constrain already established semantics.
 
-This avoids `instanceof`, `Class<?>`, representation-specific property types, capability witness objects, and closed visitor methods inside semantic attributes.
+This avoids `instanceof`, `Class<?>`, representation-specific field types, capability witness objects, and closed visitor methods inside semantic attributes.
 
 It also creates a natural extension point for additional data-oriented vocabularies. An object concerned with persistence, relations, editing, rendering, or another specialized concern may interpret focused attribute objects or decorators without adding unrelated methods to every `Attribute`.
 
@@ -646,7 +646,7 @@ FieldAt(reference, Data)
    ↓
 Attribute.valueFrom(Field)
    ↓
-AttributeValue
+attribute value
    ↓
 Model
 ```
@@ -674,9 +674,9 @@ represented information merely as a consequence of construction.
 Semantic validity is established when a model attribute is observed. That
 observation may locate a represented field, interpret its value, enforce
 attribute semantics, and either produce the requested value or fail with an
-`AttributeValueException`.
+`attribute valueException`.
 
-> **Construction establishes object integrity; observation establishes facts about observed data.**
+> **Construction establishes object integrity; reading establishes facts about represented data.**
 
 Therefore:
 
@@ -684,12 +684,12 @@ Therefore:
 
 This distinction is specified in ADR-003.
 
-### AttributeValue
+### attribute value
 
-`AttributeValue<T>` represents a typed semantic value exposed by a model.
+`T` represents a typed semantic value exposed by a model.
 
 ```java
-public interface AttributeValue<T> {
+public interface T {
 
     AttributeName<T> name();
 
@@ -704,11 +704,10 @@ Its `name()` can be observed without interpreting represented data. Calling `val
 A `Model` is a semantic view of `Data` through `Metadata` and a `FieldMapping`.
 
 ```java
-public interface Model extends Iterable<AttributeValue<?>> {
-
+public interface Model {
     Metadata metadata();
-
     Data data();
+    <T> T valueOf(AttributeName<T> name);
 }
 ```
 
@@ -719,7 +718,7 @@ The underlying information does not have to be copied into equivalent Java field
 Typed lookup is a derived observation rather than a fundamental method on `Model`:
 
 ```java
-String name = new AttributeValueAt<>(nameAttribute, model).value();
+String name = new attribute valueAt<>(nameAttribute, model).value();
 ```
 
 This keeps `Model` small while preserving typed semantic value.
@@ -730,14 +729,14 @@ This keeps `Model` small while preserving typed semantic value.
 
 A `Model` retains access to the `Data` from which it was constructed.
 
-This enables further data-oriented operations without forcing all information into `AttributeValue`s.
+This enables further data-oriented operations without forcing all information into `attribute value`s.
 
 For example:
 
 ```text
 Data
- ├─ id            → AttributeValue
- ├─ status        → AttributeValue
+ ├─ id            → attribute value
+ ├─ status        → attribute value
  ├─ description   → retained as Data
  └─ sourceNotes   → retained as Data
 ```
@@ -889,7 +888,7 @@ A domain object may therefore consume or wrap a `Model` instead of reproducing t
                             ▼
                           Model
                             │
-                      AttributeValues
+                      attribute values
                             │
                             ▼
                          SEMANTICS
@@ -935,9 +934,11 @@ Data / Metadata / Model ─┼── CRUD
 
 > **Neither Data nor Metadata has to originate from a Java class.**
 
-> **Data is transformable. Model is trustworthy.**
+> **Data is transformable. Model relates semantics to representation.**
 
 > **Data knows representation. Metadata knows semantics. FieldMapping relates their coordinates.**
+
+> **Data exposes representation structure. Metadata exposes semantic structure. Model relates them; it does not define another structure.**
 
 > **Forma core knows that data has coordinates, not what shape those coordinates have.**
 
@@ -949,7 +950,7 @@ Data / Metadata / Model ─┼── CRUD
 
 > **Same name is a mapping convention, not a universal representation coordinate.**
 
-> **Construction establishes object integrity; observation establishes facts about observed data.**
+> **Construction establishes object integrity; reading establishes facts about represented data.**
 
 > **A Model always satisfies its structural invariants; semantic validity is established by its observations.**
 
@@ -965,7 +966,7 @@ Forma avoids requiring a dedicated Java class for every shape of data entering o
 
 Information irrelevant to current decisions can remain encapsulated in its source representation without becoming unnecessary Java fields.
 
-Data may retain properties not currently represented as model attributes, avoiding accidental information loss while also avoiding artificial expansion of the semantic object model.
+Data may retain fields not currently represented as model attributes, avoiding accidental information loss while also avoiding artificial expansion of the semantic object model.
 
 Different physical representations can participate in the same semantic model through different `FieldMapping` strategies.
 
@@ -975,7 +976,7 @@ Merge, projection, filtering, decoding, decryption, and similar operations can o
 
 Primitive representation conversions are centralized in reusable `FieldValue` implementations rather than duplicated across every representation-specific `Field`.
 
-Semantic attributes no longer require `instanceof`, representation-specific property types, capability witness objects, or a closed interpreter whose future methods force unrelated attributes to implement impossible cases.
+Semantic attributes no longer require `instanceof`, representation-specific field types, capability witness objects, or a closed interpreter whose future methods force unrelated attributes to implement impossible cases.
 
 The common `FieldValue` vocabulary becomes an explicit design boundary and must therefore remain deliberately small.
 
@@ -1021,9 +1022,9 @@ Partial and intermediate information may not yet satisfy a complete semantic str
 
 Rejected.
 
-`Metadata` describes semantics. Model construction composes those semantics with concrete `Data` through a particular `FieldMapping`; observations establish whether represented state satisfies them.
+`Metadata` describes semantics. Model construction composes those semantics with concrete `Data` through a particular `FieldMapping`; value requests establish whether represented state satisfies them.
 
-Putting construction behavior on `Metadata` would conflate semantic description with the composition and observation of represented data.
+Putting construction behavior on `Metadata` would conflate semantic description with the composition and reading represented data.
 
 ### Data directly exposes semantic attributes
 
@@ -1113,7 +1114,7 @@ An `AttributeName` identifies an attribute within a metadata context. Context al
 
 ### Model uses mutable validation state
 
-Rejected. A Model is structurally valid by construction and does not transition from unvalidated to validated. Semantic observations establish facts about represented state when requested.
+Rejected. A Model is structurally valid by construction and does not transition from unvalidated to validated. Semantic value requests establish facts about represented state when requested.
 
 ### Data and Model implement output formats directly
 
