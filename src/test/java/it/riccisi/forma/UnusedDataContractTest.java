@@ -96,7 +96,7 @@ final class UnusedDataContractTest {
         }
 
         long attributeCount() {
-            return StreamSupport.stream(this.model.spliterator(), false).count();
+            return StreamSupport.stream(this.model.metadata().spliterator(), false).count();
         }
 
         String description() {
