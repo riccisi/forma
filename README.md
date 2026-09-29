@@ -185,7 +185,7 @@ Unused fields remain data and do not need equivalent Java attributes.
 
 ## Data composition
 
-Since `Data` exists independently from semantic validity, it can be transformed before being bound to metadata.
+Since `Data` exists independently from semantic validity, it can be composed before participating in a model.
 
 For example, an application may receive a partial update over HTTP while the current state comes from a database:
 
@@ -211,6 +211,10 @@ Data candidate = new MergedData(
 
 Model student = new ModelOf(students, candidate, mapping);
 ```
+
+`MergedData` exposes the union of the representation coordinates from both sources. When both sources represent the same coordinate, the overlay value takes precedence. Composition may enumerate field references to establish that structure, but it does not interpret field values merely to compose the data.
+
+> **MergedData determines the coordinates of the composed representation. MergedField determines the value represented at one composed coordinate.**
 
 Possible data compositions may include:
 
