@@ -7,7 +7,7 @@ import org.cactoos.Text;
 import org.cactoos.text.UncheckedText;
 
 /**
- * Semantic string interpreted from a textual property value.
+ * Semantic string interpreted from a textual field value.
  */
 @RequiredArgsConstructor
 public final class StringAttribute extends TextAttribute<String> {
