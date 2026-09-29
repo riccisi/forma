@@ -106,7 +106,7 @@ final class ModelValueContractTest {
         }
 
         @Override
-        public FieldReference property(final AttributeName<?> attribute) {
+        public FieldReference reference(final AttributeName<?> attribute) {
             this.calls.incrementAndGet();
             return new NamedReference(new UncheckedText(attribute).asString());
         }
