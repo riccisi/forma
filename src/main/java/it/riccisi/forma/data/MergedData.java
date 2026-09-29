@@ -27,7 +27,7 @@ public final class MergedData implements Data {
 
     @Override
     public Iterator<Field> iterator() {
-        return new Mapped<FieldReference, Field>(
+        return new Mapped<Field>(
             reference -> new MergedField(reference, this.base, this.overlay),
             new SetOf<>(
                 new Joined<>(
