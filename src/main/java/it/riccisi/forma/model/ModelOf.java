@@ -1,16 +1,26 @@
 package it.riccisi.forma.model;
 
-import it.riccisi.forma.AttributeValue;
+import it.riccisi.forma.AttributeName;
 import it.riccisi.forma.Data;
 import it.riccisi.forma.FieldMapping;
+import it.riccisi.forma.FieldReference;
 import it.riccisi.forma.Metadata;
 import it.riccisi.forma.Model;
-import java.util.Iterator;
+import it.riccisi.forma.attribute.AttributeAt;
+import it.riccisi.forma.exception.AttributeValueException;
+import it.riccisi.forma.exception.MissingFieldException;
+import it.riccisi.forma.exception.RejectedValueException;
+import it.riccisi.forma.exception.UnparsableValueException;
+import it.riccisi.forma.field.FieldAt;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import org.cactoos.iterator.Mapped;
 
-/** An instance of metadata over represented data. */
+/**
+ * Model relating metadata to represented data through a field mapping.
+ *
+ * <p>The model has no structure beyond the structure already described by its
+ * metadata. It establishes one semantic value at a time when requested.
+ */
 @RequiredArgsConstructor
 public final class ModelOf implements Model {
 
@@ -29,14 +39,18 @@ public final class ModelOf implements Model {
     }
 
     @Override
-    public Iterator<AttributeValue<?>> iterator() {
-        return new Mapped<>(
-            attribute -> new AttributeValueOf<>(
-                attribute,
-                this.mapping,
-                this.data
-            ),
-            this.metadata.iterator()
-        );
+    public <T> T valueOf(final AttributeName<T> name) {
+        final FieldReference reference = this.mapping.reference(name);
+        try {
+            return new AttributeAt<T>(name, this.metadata).valueFrom(
+                new FieldAt(reference, this.data)
+            );
+        } catch (
+            final MissingFieldException
+                | UnparsableValueException
+                | RejectedValueException err
+        ) {
+            throw new AttributeValueException(name, reference, err);
+        }
     }
 }
