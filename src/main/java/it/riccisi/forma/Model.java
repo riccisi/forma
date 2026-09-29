@@ -1,17 +1,13 @@
 package it.riccisi.forma;
 
 /**
- * A semantic view of represented data through metadata.
+ * An instance of metadata over represented data.
  *
- * <p>A model composes represented {@link Data} and semantic {@link Metadata}.
- * Construction establishes that composition without requiring represented
- * values to be interpreted.
- *
- * <p>Iteration exposes semantic attribute observations described by metadata.
- * A value crosses the representation-to-semantics boundary when that
- * observation is requested.
+ * <p>Construction composes {@link Data} and {@link Metadata} without resolving
+ * represented values. Iteration exposes the values of the metadata attributes
+ * within this model.
  */
-public interface Model extends Iterable<ModelAttribute<?>> {
+public interface Model extends Iterable<AttributeValue<?>> {
 
     Metadata metadata();
 
