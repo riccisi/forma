@@ -1,5 +1,6 @@
 package it.riccisi.forma.model;
 
+import it.riccisi.forma.Attribute;
 import it.riccisi.forma.AttributeName;
 import it.riccisi.forma.Data;
 import it.riccisi.forma.FieldMapping;
@@ -40,9 +41,10 @@ public final class ModelOf implements Model {
 
     @Override
     public <T> T valueOf(final AttributeName<T> name) {
-        final FieldReference reference = this.mapping.reference(name);
+        final Attribute<T> attribute = new AttributeAt<>(name, this.metadata);
+        final FieldReference reference = this.mapping.reference(attribute.name());
         try {
-            return new AttributeAt<T>(name, this.metadata).valueFrom(
+            return attribute.valueFrom(
                 new FieldAt(reference, this.data)
             );
         } catch (
