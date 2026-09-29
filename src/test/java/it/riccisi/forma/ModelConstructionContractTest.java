@@ -7,12 +7,12 @@ import it.riccisi.forma.attribute.StringAttribute;
 import it.riccisi.forma.data.HashtableData;
 import it.riccisi.forma.mapping.ExplicitMapping;
 import it.riccisi.forma.metadata.MetadataOf;
-import it.riccisi.forma.model.AttributeOf;
+import it.riccisi.forma.model.AttributeValueAt;
 import it.riccisi.forma.model.ModelOf;
-import it.riccisi.forma.property.NamedReference;
-import it.riccisi.forma.property.NumberValue;
-import it.riccisi.forma.property.PropertyAt;
-import it.riccisi.forma.property.TextValue;
+import it.riccisi.forma.field.NamedReference;
+import it.riccisi.forma.field.NumberValue;
+import it.riccisi.forma.field.FieldAt;
+import it.riccisi.forma.field.TextValue;
 import java.util.Map;
 import java.util.stream.StreamSupport;
 import org.cactoos.text.TextOf;
@@ -56,7 +56,7 @@ final class ModelConstructionContractTest {
     }
 
     @Test
-    void preservesUninterpretedSourceProperty() {
+    void preservesUninterpretedSourceField() {
         assertThat(new Student().description(), equalTo("Preserved source data"));
     }
 
@@ -64,7 +64,7 @@ final class ModelConstructionContractTest {
 
         private final AttributeName<String> name;
         private final AttributeName<Integer> age;
-        private final PropertyReference description;
+        private final FieldReference description;
         private final Metadata metadata;
         private final Data data;
         private final Model model;
@@ -72,8 +72,8 @@ final class ModelConstructionContractTest {
         private Student() {
             this.name = new AttributeNameOf<>("name");
             this.age = new AttributeNameOf<>("age");
-            final PropertyReference nameref = new NamedReference("student_name");
-            final PropertyReference ageref = new NamedReference("student_age");
+            final FieldReference nameref = new NamedReference("student_name");
+            final FieldReference ageref = new NamedReference("student_age");
             this.description = new NamedReference("description");
             this.metadata = new MetadataOf(
                 new NonBlankAttribute(new StringAttribute(this.name)),
@@ -91,11 +91,11 @@ final class ModelConstructionContractTest {
         }
 
         String name() {
-            return new AttributeOf<>(this.name, this.model).value();
+            return new AttributeValueAt<>(this.name, this.model).value();
         }
 
         Integer age() {
-            return new AttributeOf<>(this.age, this.model).value();
+            return new AttributeValueAt<>(this.age, this.model).value();
         }
 
         long attributeCount() {
@@ -104,7 +104,7 @@ final class ModelConstructionContractTest {
 
         String description() {
             return new UncheckedText(
-                new PropertyAt(this.description, this.model.data()).value().asText()
+                new FieldAt(this.description, this.model.data()).value().asText()
             ).asString();
         }
     }
