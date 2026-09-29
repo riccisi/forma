@@ -1,27 +1,21 @@
 package it.riccisi.forma.mapping;
 
 import it.riccisi.forma.AttributeName;
-import it.riccisi.forma.PropertyMapping;
-import it.riccisi.forma.PropertyReference;
+import it.riccisi.forma.FieldMapping;
+import it.riccisi.forma.FieldReference;
 import java.util.function.Function;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.cactoos.Text;
 
-/**
- * Property mapping deriving representation coordinates from attribute names.
- *
- * <p>The supplied reference function remains representation-specific. This
- * mapping only establishes the convention that semantic and representation
- * names share the same text.
- */
+/** Field mapping deriving representation coordinates from attribute names. */
 @RequiredArgsConstructor
-public final class SameNameMapping implements PropertyMapping {
+public final class SameNameMapping implements FieldMapping {
 
-    @NonNull private final Function<Text, ? extends PropertyReference> reference;
+    @NonNull private final Function<Text, ? extends FieldReference> reference;
 
     @Override
-    public PropertyReference property(final AttributeName<?> attribute) {
+    public FieldReference reference(final AttributeName<?> attribute) {
         return this.reference.apply(attribute);
     }
 }
