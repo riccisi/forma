@@ -58,7 +58,7 @@ AttributeName<T>
               T
 ```
 
-`AttributeAt` models semantic lookup inside `Metadata` just as `FieldAt` models representation lookup inside `Data`.
+`AttributeAt` models semantic lookup among an iterable source of attributes just as `FieldAt` models representation lookup among an iterable source of fields. `Metadata` and `Data` remain their natural domain sources, while lookup itself depends only on the iterable structure it needs.
 
 > **Data exposes representation structure. Metadata exposes semantic structure. Model relates them; it does not define another structure.**
 
