@@ -29,41 +29,41 @@ import static org.hamcrest.Matchers.sameInstance;
 final class UnusedDataContractTest {
 
     @Test
-    void constructionDoesNotInterpretUnusedProperty() {
-        assertThat(new UnusedPropertyScenario().interpreted(), is(false));
+    void constructionDoesNotInterpretUnusedField() {
+        assertThat(new UnusedFieldScenario().interpreted(), is(false));
     }
 
     @Test
     void modelRetainsOriginalData() {
-        final UnusedPropertyScenario scenario = new UnusedPropertyScenario();
+        final UnusedFieldScenario scenario = new UnusedFieldScenario();
         assertThat(scenario.model.data(), sameInstance(scenario.data));
     }
 
     @Test
     void modelExposesOnlyMetadataAttributes() {
-        assertThat(new UnusedPropertyScenario().attributeCount(), equalTo(2L));
+        assertThat(new UnusedFieldScenario().attributeCount(), equalTo(2L));
     }
 
     @Test
-    void unusedPropertyCanStillBeRead() {
+    void unusedFieldCanStillBeRead() {
         assertThat(
-            new UnusedPropertyScenario().description(),
+            new UnusedFieldScenario().description(),
             equalTo("Preserved source data")
         );
     }
 
     @Test
-    void readingUnusedPropertyInterpretsItsValue() {
-        assertThat(new UnusedPropertyScenario().interpretedAfterRead(), is(true));
+    void readingUnusedFieldInterpretsItsValue() {
+        assertThat(new UnusedFieldScenario().interpretedAfterRead(), is(true));
     }
 
-    private static final class UnusedPropertyScenario {
+    private static final class UnusedFieldScenario {
 
         private final AtomicBoolean observed;
         private final Data data;
         private final Model model;
 
-        private UnusedPropertyScenario() {
+        private UnusedFieldScenario() {
             this.observed = new AtomicBoolean();
             final FieldReference description = new NamedReference("description");
             this.data = new DataOf(
