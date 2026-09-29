@@ -48,25 +48,27 @@ public interface Data extends Iterable<Field> {
 }
 ```
 
-Generic lookup is derived from these contracts. `FieldAt` represents the field at a particular coordinate:
+Generic lookup is derived from the iterable field structure. `FieldAt` represents the field at a particular coordinate among fields:
 
 ```java
-new FieldAt(reference, data)
+new FieldAt(reference, fields)
 ```
+
+`FieldAt` depends on `Iterable<Field>` rather than on `Data` itself. A `Data` is therefore a natural source for lookup, while composed iterable sources can use the same addressing object.
 
 ### Attribute lookup remains a semantic concern
 
-`Metadata` remains an iterable description rather than acquiring a repository-style lookup method. Generic semantic lookup is represented by `AttributeAt`:
+`Metadata` remains an iterable description rather than acquiring a repository-style lookup method. Generic semantic lookup is represented by `AttributeAt`, which depends on `Iterable<Attribute<?>>` rather than on `Metadata` itself:
 
 ```java
-new AttributeAt<>(name, metadata)
+new AttributeAt<>(name, attributes)
 ```
 
 This mirrors representation lookup without collapsing the two coordinate systems:
 
 ```text
-Metadata + AttributeName  -> AttributeAt -> Attribute
-Data     + FieldReference -> FieldAt     -> Field
+Iterable<Attribute<?>> + AttributeName -> AttributeAt -> Attribute
+Iterable<Field>        + FieldReference -> FieldAt     -> Field
 ```
 
 The symmetry is structural, while the coordinates remain semantically distinct.
