@@ -1,30 +1,28 @@
 package it.riccisi.forma.mapping;
 
 import it.riccisi.forma.AttributeName;
-import it.riccisi.forma.PropertyMapping;
-import it.riccisi.forma.PropertyReference;
+import it.riccisi.forma.FieldMapping;
+import it.riccisi.forma.FieldReference;
 import java.util.Map;
 import lombok.NonNull;
 
-/**
- * Property mapping defined by explicit semantic-to-representation associations.
- */
-public final class ExplicitMapping implements PropertyMapping {
+/** Field mapping defined by explicit semantic-to-representation associations. */
+public final class ExplicitMapping implements FieldMapping {
 
-    private final Map<AttributeName<?>, PropertyReference> references;
+    private final Map<AttributeName<?>, FieldReference> references;
 
     public ExplicitMapping(
-        @NonNull final Map<? extends AttributeName<?>, ? extends PropertyReference> references
+        @NonNull final Map<? extends AttributeName<?>, ? extends FieldReference> references
     ) {
         this.references = Map.copyOf(references);
     }
 
     @Override
-    public PropertyReference property(final AttributeName<?> attribute) {
-        final PropertyReference reference = this.references.get(attribute);
+    public FieldReference reference(final AttributeName<?> attribute) {
+        final FieldReference reference = this.references.get(attribute);
         if (reference == null) {
             throw new IllegalArgumentException(
-                String.format("No property mapping for attribute '%s'", attribute)
+                String.format("No field mapping for attribute '%s'", attribute)
             );
         }
         return reference;
