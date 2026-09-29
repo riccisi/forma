@@ -1,28 +1,26 @@
 package it.riccisi.forma.data;
 
 import it.riccisi.forma.Data;
-import it.riccisi.forma.Property;
+import it.riccisi.forma.Field;
 import java.util.Iterator;
 import lombok.NonNull;
 import org.cactoos.list.ListOf;
 
-/**
- * Data composed directly from represented properties.
- */
+/** Data composed directly from represented fields. */
 public final class DataOf implements Data {
 
-    private final Iterable<Property> properties;
+    private final Iterable<Field> fields;
 
-    public DataOf(final Property... properties) {
-        this(new ListOf<>(properties));
+    public DataOf(final Field... fields) {
+        this(new ListOf<>(fields));
     }
 
-    public DataOf(@NonNull final Iterable<Property> properties) {
-        this.properties = new ListOf<>(properties);
+    public DataOf(@NonNull final Iterable<Field> fields) {
+        this.fields = new ListOf<>(fields);
     }
 
     @Override
-    public Iterator<Property> iterator() {
-        return this.properties.iterator();
+    public Iterator<Field> iterator() {
+        return this.fields.iterator();
     }
 }
