@@ -51,6 +51,20 @@ final class MergedDataContractTest {
     }
 
     @Test
+    void representedEmptyValueOverridesBase() {
+        assertThat(
+            new ValueOf(
+                new MergedData(
+                    data(field("description", "preserved")),
+                    data(field("description", ""))
+                ),
+                "description"
+            ).value(),
+            equalTo("")
+        );
+    }
+
+    @Test
     void baseValueRemainsWhenOverlayDoesNotRepresentCoordinate() {
         assertThat(
             new ValueOf(
