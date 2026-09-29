@@ -7,7 +7,6 @@ import it.riccisi.forma.attribute.StringAttribute;
 import it.riccisi.forma.data.HashtableData;
 import it.riccisi.forma.mapping.ExplicitMapping;
 import it.riccisi.forma.metadata.MetadataOf;
-import it.riccisi.forma.model.AttributeValueAt;
 import it.riccisi.forma.model.ModelOf;
 import it.riccisi.forma.field.NamedReference;
 import it.riccisi.forma.field.NumberValue;
@@ -24,7 +23,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.sameInstance;
 
 /**
- * End-to-end contract for demand-driven model observation.
+ * End-to-end contract for demand-driven model values.
  */
 final class ModelConstructionContractTest {
 
@@ -41,12 +40,12 @@ final class ModelConstructionContractTest {
     }
 
     @Test
-    void observesTextualAttribute() {
+    void resolvesTextualAttribute() {
         assertThat(new Student().name(), equalTo("Ada"));
     }
 
     @Test
-    void observesNumericAttribute() {
+    void resolvesNumericAttribute() {
         assertThat(new Student().age(), equalTo(42));
     }
 
@@ -91,15 +90,15 @@ final class ModelConstructionContractTest {
         }
 
         String name() {
-            return new AttributeValueAt<>(this.name, this.model).value();
+            return this.model.valueOf(this.name);
         }
 
         Integer age() {
-            return new AttributeValueAt<>(this.age, this.model).value();
+            return this.model.valueOf(this.age);
         }
 
         long attributeCount() {
-            return StreamSupport.stream(this.model.spliterator(), false).count();
+            return StreamSupport.stream(this.model.metadata().spliterator(), false).count();
         }
 
         String description() {
