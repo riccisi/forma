@@ -3,26 +3,20 @@ package it.riccisi.forma;
 import it.riccisi.forma.attribute.AttributeNameOf;
 import it.riccisi.forma.attribute.StringAttribute;
 import it.riccisi.forma.data.DataOf;
-import it.riccisi.forma.metadata.MetadataOf;
-import it.riccisi.forma.model.AttributeValueAt;
-import it.riccisi.forma.model.ModelOf;
-import it.riccisi.forma.field.NamedReference;
 import it.riccisi.forma.field.FieldOf;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
-import java.util.Iterator;
-import java.util.List;
+import it.riccisi.forma.field.NamedReference;
+import it.riccisi.forma.metadata.MetadataOf;
+import it.riccisi.forma.model.ModelOf;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.cactoos.Text;
 import org.cactoos.text.TextOf;
 import org.cactoos.text.UncheckedText;
 import org.junit.jupiter.api.Test;
 
-/**
- * Contract for demand-driven semantic values.
- */
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
+/** Contract for demand-driven semantic values. */
 final class ModelValueContractTest {
 
     @Test
@@ -31,13 +25,8 @@ final class ModelValueContractTest {
     }
 
     @Test
-    void iterationDoesNotResolveMapping() {
-        assertThat(new ValueModel().iterate().mappingCalls(), is(0));
-    }
-
-    @Test
-    void nameDoesNotResolveMapping() {
-        assertThat(new ValueModel().name().mappingCalls(), is(0));
+    void metadataInspectionDoesNotResolveMapping() {
+        assertThat(new ValueModel().inspectMetadata().mappingCalls(), is(0));
     }
 
     @Test
@@ -69,13 +58,8 @@ final class ModelValueContractTest {
             );
         }
 
-        ValueModel iterate() {
-            this.model.iterator().next();
-            return this;
-        }
-
-        ValueModel name() {
-            this.model.iterator().next().name();
+        ValueModel inspectMetadata() {
+            this.model.metadata().iterator().next().name();
             return this;
         }
 
@@ -84,10 +68,9 @@ final class ModelValueContractTest {
         }
 
         String value() {
-            final String value = new AttributeValueAt<String>(
-                new AttributeNameOf<>("status"),
-                this.model
-            ).value();
+            final String value = this.model.valueOf(
+                new AttributeNameOf<>("status")
+            );
             return String.format(
                 "%s:%d:%d",
                 value,
