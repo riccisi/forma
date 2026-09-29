@@ -10,6 +10,7 @@ import it.riccisi.forma.data.MergedData;
 import it.riccisi.forma.field.FieldAt;
 import it.riccisi.forma.field.FieldOf;
 import it.riccisi.forma.field.NamedReference;
+import it.riccisi.forma.field.MergedField;
 import it.riccisi.forma.field.TextValue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.StreamSupport;
@@ -74,8 +75,8 @@ final class MergedDataContractTest {
     }
 
     @Test
-    void overlayMatchStopsBeforeBaseIteration() {
-        assertThat(new OrderedMerge().baseIterated(), is(false));
+    void mergedFieldDoesNotInspectBaseWhenOverlayMatches() {
+        assertThat(new OrderedField().baseIterated(), is(false));
     }
 
     private static Data data(final Field... fields) {
@@ -127,20 +128,18 @@ final class MergedDataContractTest {
         }
     }
 
-    private static final class OrderedMerge {
+    private static final class OrderedField {
 
         private final AtomicBoolean base = new AtomicBoolean();
 
         boolean baseIterated() {
-            new ValueOf(
-                new MergedData(
-                    () -> {
-                        this.base.set(true);
-                        return data(field("email", "old")).iterator();
-                    },
-                    data(field("email", "new"))
-                ),
-                "email"
+            new MergedField(
+                new NamedReference("email"),
+                () -> {
+                    this.base.set(true);
+                    return data(field("email", "old")).iterator();
+                },
+                data(field("email", "new"))
             ).value();
             return this.base.get();
         }
