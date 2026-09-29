@@ -108,7 +108,8 @@ Data                            Metadata
                  │
                  ▼
                Model
-                 └── AttributeValue<T>
+                 │
+                 └── valueOf(AttributeName<T>) → T
 ```
 
 ### Data and Field
@@ -158,29 +159,27 @@ public interface FieldMapping {
 
 This lets the same metadata describe JSON fields, JDBC columns, POJO members, positional records, or other representations without coupling either side to the other's coordinate system.
 
-### Model and AttributeValue
+### Model
 
-A `Model` is an instance of `Metadata` over `Data`.
+A `Model` is an instance of `Metadata` over `Data`. It relates semantic structure to represented information; it does not introduce another iterable structure.
 
 ```java
-public interface Model extends Iterable<AttributeValue<?>> {
+public interface Model {
     Metadata metadata();
     Data data();
+    <T> T valueOf(AttributeName<T> name);
 }
 ```
 
-An `AttributeValue<T>` is the value of an attribute within that model:
+`Data` exposes representation structure through its fields. `Metadata` exposes semantic structure through its attributes. A model uses those two structures, together with its `FieldMapping`, to establish the requested semantic value.
 
 ```java
-public interface AttributeValue<T> {
-    AttributeName<T> name();
-    T value();
-}
+String name = model.valueOf(new AttributeNameOf<>("name"));
 ```
 
-Construction composes the model without reading all represented values. A value is established when it is requested.
+Construction composes the model without reading represented values. Only `valueOf(...)` establishes the requested value.
 
-> **An Attribute describes a semantic value. An AttributeValue represents that value in a Model.**
+> **Data exposes representation structure. Metadata exposes semantic structure. Model relates them; it does not define another structure.**
 
 Unused fields remain data and do not need equivalent Java attributes.
 
@@ -265,23 +264,7 @@ Student POJO
   PojoData
 ```
 
-This is different from a `PojoModel`.
-
-A `PojoData` interprets an arbitrary Java object as data.
-
-A `PojoModel` may additionally derive metadata from the Java class, annotations, reflection, or another description mechanism and bind that data automatically.
-
-Conceptually:
-
-```text
-PojoData(object)
-       +
-PojoMetadata(object.getClass())
-       ↓
-      bind
-       ↓
-   PojoModel
-```
+A `PojoData` interprets an arbitrary Java object as represented data. Metadata derived from a Java class, annotations, reflection, or another description mechanism remains a separate semantic description and can be related to that data by a `Model`.
 
 The distinction remains:
 
@@ -336,6 +319,8 @@ Forma is guided by a few principles.
 > **Construction establishes object integrity; reading values establishes facts about represented data.**
 
 > **A Model is an instance of Metadata over Data.**
+
+> **Data exposes representation structure. Metadata exposes semantic structure. Model relates them; it does not define another structure.**
 
 > **A Model does not require all represented values to be read during construction.**
 
